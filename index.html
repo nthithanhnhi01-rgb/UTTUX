@@ -861,27 +861,40 @@ function parseImportText(text) {
     if (/^Bản dịch mẫu/i.test(line)) { mode = 'samples'; i++; continue; }
     
     if (mode === 'prompt') {
-      if (line) currentArt.prompt += (currentArt.prompt ? " " : "") + line.replace(/^[""]|[""]$/g, '');
+      if (line) currentArt.prompt += (currentArt.prompt ? " " : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'answer') {
-      if (line) currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^[""]|[""]$/g, '');
+      if (line) currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'grammar_vocab') {
+      // ĐÃ SỬA LỖI TẠI ĐÂY: Dùng Regex để tách riêng phần trong ngoặc và ngoài ngoặc
       if (line.startsWith('"') || line.startsWith('“')) {
-        let wrongText = line.replace(/^[“"]|[”"]$/g, '');
-        let note = ""; let fix = ""; let isGrammar = false; 
-        
-        let lowerLine = line.toLowerCase();
-        if (lowerLine.includes("ngữ pháp") || lowerLine.includes("cấu trúc") || lowerLine.includes("trật tự từ")) isGrammar = true;
+        const match = line.match(/^["“](.*?)["”]\s*(.*)$/);
+        let wrongText = ""; 
+        let note = ""; 
+        let fix = ""; 
+        let isGrammar = false; 
+
+        if (match) {
+          wrongText = match[1].trim(); // Phần chữ Hán bị sai (nằm trong ngoặc kép)
+          note = match[2].trim();      // Phần giải thích lỗi (nằm ngoài ngoặc kép)
+        } else {
+          // Phòng hờ AI quên đóng ngoặc kép
+          wrongText = line.replace(/^[“"]/, '').trim();
+        }
         
         i++;
-        let currentBlockLines = [];
-        while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("Sửa thành:") && !lines[i].startsWith("b.") && !lines[i].startsWith("Bản dịch mẫu") && !lines[i].startsWith('"')) {
+        // Gom các dòng ghi chú tiếp theo (nếu ghi chú dài xuống dòng)
+        let currentBlockLines = note ? [note] : [];
+        while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("Sửa thành:") && !lines[i].startsWith("b.") && !lines[i].startsWith("Bản dịch mẫu") && !lines[i].startsWith('"') && !lines[i].startsWith('“')) {
           currentBlockLines.push(lines[i].trim());
           i++;
         }
         note = currentBlockLines.join(" ");
         
+        // Nhận diện lỗi ngữ pháp hay từ vựng dựa trên từ khoá trong ghi chú
         let lowerNote = note.toLowerCase();
-        if (lowerNote.includes("ngữ pháp") || lowerNote.includes("cấu trúc") || lowerNote.includes("trật tự từ") || lowerNote.includes("cấu trúc bị động")) isGrammar = true;
+        if (lowerNote.includes("ngữ pháp") || lowerNote.includes("cấu trúc") || lowerNote.includes("trật tự từ") || lowerNote.includes("cấu trúc bị động") || lowerNote.includes("đại từ") || lowerNote.includes("mệnh đề")) {
+          isGrammar = true;
+        }
         
         if (i < lines.length && lines[i].trim().startsWith("Sửa thành:")) {
           fix = lines[i].trim().replace(/^Sửa thành:\s*/, '');
