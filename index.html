@@ -1351,23 +1351,23 @@ function renderSidebar(){
   const list = document.getElementById("partList");
   list.innerHTML = "";
   
- // Đảm bảo categories luôn là mảng hợp lệ trước khi gọi forEach
   if (!Array.isArray(categories)) {
     categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
   }
 
   categories.forEach((cat, catIdx) => {
-    // Kiểm tra nếu nhóm không có mảng parts thì khởi tạo mảng rỗng để tránh văng lỗi
     if (!cat.parts || !Array.isArray(cat.parts)) {
       cat.parts = [];
     }
 
+    // In ra tên chủ đề mẹ (Category)
     const catHeader = document.createElement("div");
     catHeader.className = "cat-group-header";
-    catHeader.style.cssText = "font-size:0.75rem; font-weight:700; color:var(--gold); padding:8px 4px 4px; text-transform:uppercase; letter-spacing:0.05em;";
+    catHeader.style.cssText = "font-size:0.75rem; font-weight:700; color:var(--gold); padding:12px 4px 4px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--line); margin-bottom:6px;";
     catHeader.textContent = cat.category || "Chủ đề";
     list.appendChild(catHeader);
 
+    // Duyệt qua các bài con nằm trong chủ đề đó
     cat.parts.forEach((p, partIdx) => {
       const btn = document.createElement("button");
       const isActive = (catIdx === currentCatIndex && partIdx === currentPartIndex);
