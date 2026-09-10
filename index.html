@@ -1498,6 +1498,61 @@ function renderMain(){
     return; 
   }
   
+  const html = `
+    <header class="part-head">
+      <div>
+        <small style="color:var(--gold); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(cat.category)}</small>
+        <h2>Bài ${currentPartIndex + 1}. ${escapeHtml(p.topic||"")}</h2>
+      </div>
+      <button type="button" class="btn-edit-part" id="btnEditPart">✎ Sửa bài này</button>
+    </header>
+
+    <section class="block prompt-block">
+      <h3>Đề bài</h3>
+      <p class="vi">${escapeHtml(p.prompt)}</p>
+    </section>
+
+    <section class="block answer-block">
+      <h3>Bài làm của tôi</h3>
+      <p class="zh">${buildAnswerHtml(p)}</p>
+    </section>
+
+    <section class="errors-grid">
+      <div class="err-col err-grammar">
+        <h3>Sai ngữ pháp <span class="count">${p.grammar ? p.grammar.length : 0}</span></h3>
+        ${p.grammar && p.grammar.length ? p.grammar.map((it,i)=>errItemHtml(it,"err-g-"+i)).join("") : '<p class="empty-note">Không có lỗi ngữ pháp được ghi nhận.</p>'}
+      </div>
+      <div class="err-col err-vocab">
+        <h3>Sai từ vựng / dùng từ <span class="count">${p.vocab ? p.vocab.length : 0}</span></h3>
+        ${p.vocab && p.vocab.length ? p.vocab.map((it,i)=>errItemHtml(it,"err-v-"+i)).join("") : '<p class="empty-note">Không có lỗi dùng từ được ghi nhận.</p>'}
+      </div>
+    </section>
+
+    ${p.upgrades && p.upgrades.length ? `
+    <section class="block upgrade-block">
+      <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
+      ${p.upgrades.map((u,i) => `
+        <div class="upgrade-item" id="upg-${i}">
+          <span class="zh from">${escapeHtml(u.from)}</span><span class="arrow">→</span><span class="zh to">${escapeHtml(u.to)}</span>
+          ${u.note ? '<p class="note">'+escapeHtml(u.note)+'</p>' : ''}
+        </div>
+      `).join("")}
+    </section>` : ""}
+
+    ${p.samples && p.samples.length ? `
+    <section class="block sample-block">
+      <h3><span class="seal zh">校</span>Bản dịch mẫu</h3>
+      ${p.samples.map(s => `
+        <div class="sample-item">
+          <p class="sample-label">${escapeHtml(s.label)}</p>
+          <p class="zh sample-text">${escapeHtml(s.text)}</p>
+        </div>
+      `).join("")}
+    </section>` : ""}
+  `;
+  document.getElementById("content").innerHTML = html;
+}
+  
   // Hiển thị tiêu đề bài kèm theo tên chủ đề mẹ
   const html = `
     <header class="part-head">
