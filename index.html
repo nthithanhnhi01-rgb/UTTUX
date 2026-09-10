@@ -1553,19 +1553,6 @@ function renderMain(){
   document.getElementById("content").innerHTML = html;
 }
   
-  // Hiển thị tiêu đề bài kèm theo tên chủ đề mẹ
-  const html = `
-    <header class="part-head">
-      <div>
-        <small style="color:var(--gold); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(cat.category)}</small>
-        <h2>Bài ${currentPartIndex + 1}. ${escapeHtml(p.topic||"")}</h2>
-      </div>
-      <button type="button" class="btn-edit-part" id="btnEditPart">✎ Sửa bài này</button>
-    </header>
-    ... (phần render nội dung đề bài, bài làm, lỗi sai giữ nguyên như cũ) ...
-  `;
-  document.getElementById("content").innerHTML = html;
-}
 
 /* ============ Sửa dữ liệu hiện có (edit panel) ============ */
 const GRAMMAR_FIELDS = [
