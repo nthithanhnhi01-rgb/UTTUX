@@ -784,7 +784,160 @@ const DEFAULT_PARTS = [
   ]
 }
 ];
-
+function parseImportText(text) {
+  // Chuẩn hóa ngắt dòng
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const articles = [];
+  let currentArt = null;
+  let mode = null; // 'prompt', 'answer', 'grammar', 'vocab', 'upgrades', 'samples'
+  
+  let i = 0;
+  while (i < lines.length) {
+    let line = lines[i].trim();
+    
+    // Phát hiện bắt đầu bài mới: "BÀI 7" hoặc "Bài 7"
+    if (/^BÀI\s+\d+/i.test(line)) {
+      if (currentArt) {
+        articles.push(currentArt);
+      }
+      currentArt = {
+        id: Date.now() + Math.random(),
+        topic: "",
+        prompt: "",
+        answer: "",
+        grammar: [],
+        vocab: [],
+        upgrades: [],
+        samples: []
+      };
+      mode = null;
+      i++;
+      continue;
+    }
+    
+    if (!currentArt) {
+      i++;
+      continue;
+    }
+    
+    // Nhận diện các section chính
+    if (/^1\.\s*Đề bài/i.test(line)) {
+      mode = 'prompt';
+      i++;
+      continue;
+    }
+    if (/^2\.\s*Phần trả lời của tôi/i.test(line)) {
+      mode = 'answer';
+      i++;
+      continue;
+    }
+    if (/^3\.\s*Phần feedback/i.test(line)) {
+      mode = 'feedback_sub';
+      i++;
+      continue;
+    }
+    if (/^a\.\s*Phần dùng sai/i.test(line)) {
+      mode = 'grammar_vocab';
+      i++;
+      continue;
+    }
+    if (/^b\.\s*Phần có thể cải thiện/i.test(line)) {
+      mode = 'upgrades';
+      i++;
+      continue;
+    }
+    if (/^Bản dịch mẫu/i.test(line)) {
+      mode = 'samples';
+      i++;
+      continue;
+    }
+    
+    // Xử lý dữ liệu theo từng mode
+    if (mode === 'prompt') {
+      if (line) {
+        currentArt.prompt += (currentArt.prompt ? " " : "") + line.replace(/^[""]|[""]$/g, '');
+      }
+    } else if (mode === 'answer') {
+      if (line) {
+        currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^[""]|[""]$/g, '');
+      }
+    } else if (mode === 'grammar_vocab') {
+      // Đọc lỗi: dòng sai nằm trong ngoặc kép, theo sau là loại lỗi trong ngoặc đơn, dòng tiếp theo là Sửa thành
+      if (line.startsWith('"') || line.startsWith('“')) {
+        let wrongText = line.replace(/^[“"]|[”"]$/g, '');
+        // Kiểm tra xem có chứa loại lỗi không, ví dụ: "cụm" (ngữ pháp): giải thích
+        let note = "";
+        let fix = "";
+        let isGrammar = true;
+        
+        // Đọc tiếp các dòng kế tiếp để lấy note và fix
+        i++;
+        let currentBlockLines = [];
+        while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("Sửa thành:") && !lines[i].startsWith("b.") && !lines[i].startsWith("Bản dịch mẫu")) {
+          currentBlockLines.push(lines[i].trim());
+          i++;
+        }
+        note = currentBlockLines.join(" ");
+        
+        // Kiểm tra từ khóa loại lỗi để phân nhóm ngữ pháp hay từ vựng
+        if (note.toLowerCase().includes("từ vựng") && !note.toLowerCase().includes("ngữ pháp") && !note.toLowerCase().includes("cấu trúc")) {
+          isGrammar = false;
+        }
+        
+        // Đọc dòng "Sửa thành:"
+        if (i < lines.length && lines[i].trim().startsWith("Sửa thành:")) {
+          fix = lines[i].trim().replace(/^Sửa thành:\s*/, '');
+          i++;
+        }
+        
+        const errObj = { wrong: wrongText, note: note, fix: fix };
+        if (isGrammar) {
+          currentArt.grammar.push(errObj);
+        } else {
+          currentArt.vocab.push(errObj);
+        }
+        continue;
+      }
+    } else if (mode === 'upgrades') {
+      // Đọc phần nâng cấp có dạng: "cụm gốc" ➡️ cụm nâng cấp: ghi chú
+      if (line.includes('➡️') || line.includes('->')) {
+        let parts = line.split(/➡️|->/);
+        let fromText = parts[0].trim().replace(/^[“"]|[”"]$/g, '');
+        let rest = parts[1].trim();
+        let restParts = rest.split(':');
+        let toText = restParts[0].trim().replace(/^[“"]|[”"]$/g, '');
+        let noteText = restParts.slice(1).join(':').trim();
+        
+        currentArt.upgrades.push({
+          from: fromText,
+          to: toText,
+          note: noteText
+        });
+      }
+    } else if (mode === 'samples') {
+      // Đọc bản dịch mẫu (nhãn + câu dịch trong ngoặc kép)
+      if (line && !line.startsWith('"') && !line.startsWith('“')) {
+        let label = line.replace(/:$/, '');
+        i++;
+        while(i < lines.length && !lines[i].trim()) i++; // bỏ qua dòng trống
+        if(i < lines.length) {
+          let textSample = lines[i].trim().replace(/^[“"]|[”"]$/g, '');
+          currentArt.samples.push({
+            label: label,
+            text: textSample
+          });
+        }
+      }
+    }
+    i++;
+  }
+  
+  if (currentArt) {
+    articles.push(currentArt);
+  }
+  
+  return articles;
+}
 /* ============ Cấu hình Firebase ============ */
 const firebaseConfig = {
   apiKey: "AIzaSyAtxWw8FI0KntB7L1CTDbbEJUltW1pqgWA",
