@@ -1291,6 +1291,19 @@ function normalizeDeepInPlace(obj){
   }
 }
 
+  // Định nghĩa hàm saveCategories chạy ngầm bất đồng bộ để không bị đơ giao diện
+window.saveCategories = function(dataToSave) {
+  normalizeDeepInPlace(dataToSave);
+  setTimeout(() => {
+    try {
+      set(ref(db, DB_REF_PATH), dataToSave);
+    } catch(e) {
+      console.error("Không thể lưu dữ liệu lên đám mây:", e);
+    }
+  }, 0);
+  return true;
+};
+  
 // Hàm đẩy dữ liệu lên Firebase
 window.saveParts = function(partsToSave) {
   normalizeDeepInPlace(partsToSave);
