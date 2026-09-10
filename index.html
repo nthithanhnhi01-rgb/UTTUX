@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSP TRANSLATE 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FDFBF5;
+    --paper-2:#F8F3E6;
+    --ink:#2A2318;
+    --ink-soft:#736A56;
+    --red:#C1432E;
+    --red-soft:#E0937E;
+    --green:#2E8A63;
+    --green-soft:#DCF0E4;
+    --gold:#B8903A;
+    --accent:#28527A;
+    --line:#E4D8B8;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Noto Sans', 'Noto Sans SC', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height:1.6;
+    min-height:100vh;
+  }
+  .zh{font-family: 'Noto Sans SC', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif; line-height:1.9;}
+  a{color:inherit;}
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
+  :focus-visible{outline:2px solid var(--red); outline-offset:2px;}
+
+  .app{
+    display:grid;
+    grid-template-columns:250px 1fr;
+    min-height:100vh;
+  }
+  .rail{
+    background:var(--paper-2);
+    border-right:1px solid var(--line);
+    padding:22px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .rail-head{display:flex; gap:12px; align-items:flex-start;}
+  .mark{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:38px; height:38px;
+    border:1.5px solid var(--ink);
+    border-radius:50%;
+    font-size:1.15rem;
+    flex:none;
+  }
+  .rail-head h1{font-size:1.05rem; margin:0 0 2px; letter-spacing:.02em; color:var(--gold);}
+  .rail-head p{margin:0; font-size:.78rem; color:var(--ink-soft);}
+
+  .part-list{display:flex; flex-direction:column; gap:4px; overflow-y:auto;}
+  .part-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:9px 10px;
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    background:transparent;
+    text-align:left;
+    color:var(--ink);
+    font-size:.92rem;
+  }
+  .part-item:hover{border-color:var(--line);}
+  .part-item.active{
+    background:var(--paper);
+    border-color:var(--gold);
+  }
+  .part-item .pi-title{display:flex; flex-direction:column;}
+  .part-item .pi-title small{color:var(--ink-soft); font-size:.72rem;}
+  .part-item .pi-count{
+    font-size:.7rem;
+    color:var(--red);
+    border:1px solid var(--red-soft);
+    border-radius:10px;
+    padding:1px 7px;
+    flex:none;
+  }
+
+  .rail-actions{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .rail-actions button{
+    background:var(--paper);
+    border:1px solid var(--ink);
+    border-radius:var(--radius);
+    padding:8px 10px;
+    font-size:.82rem;
+    color:var(--ink);
+  }
+  .rail-actions button:hover{background:var(--ink); color:var(--paper);}
+  .rail-actions button.danger{border-color:var(--red); color:var(--red);}
+  .rail-actions button.danger:hover{background:var(--red); color:var(--paper);}
+  .rail-actions .icon-btn{
+    width:38px;
+    height:38px;
+    padding:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.05rem;
+    position:relative;
+  }
+  .icon-btn[data-tooltip]::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 8px);
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:.72rem;
+    line-height:1.3;
+    padding:5px 9px;
+    border-radius:var(--radius);
+    white-space:nowrap;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .15s ease;
+    z-index:30;
+  }
+  .icon-btn[data-tooltip]:hover::after,
+  .icon-btn[data-tooltip]:focus-visible::after{
+    opacity:1;
+    visibility:visible;
+  }
+
+  .content{
+    padding:40px 44px 80px;
+    max-width:800px;
+  }
+  .part-head h2{
+    font-family:'Noto Serif', 'Noto Sans SC', serif;
+    font-size:1.85rem;
+    margin:0 0 4px;
+    font-style:italic;
+    font-weight:500;
+    letter-spacing:.01em;
+    color:var(--gold);
+  }
+  .part-head .topic{color:var(--ink-soft); font-size:.9rem; margin:0 0 28px;}
+
+  .block{margin-bottom:30px;}
+  .block h3, .errors-grid h3{
+    font-size:.82rem;
+    font-weight:normal;
+    letter-spacing:.03em;
+    color:var(--gold);
+    margin:0 0 10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .prompt-block{
+    border-left:3px solid var(--red);
+    padding:16px 44px 16px 41px;
+    position:sticky;
+    top:0;
+    z-index:8;
+    background:var(--paper);
+    box-shadow:0 8px 14px -10px rgba(42,35,24,.35);
+    margin:0 -44px 30px;
+  }
+  .prompt-block h3{margin-top:0;}
+  .prompt-block p{margin:0; font-size:1.02rem;}
+  .answer-block{
+    border-left:3px solid var(--ink-soft);
+    padding:2px 0 2px 16px;
+  }
+  .answer-block p{margin:0; font-size:1.05rem;}
+  .hl{
+    cursor:pointer;
+    border-bottom:2px solid currentColor;
+    border-radius:2px;
+    padding:0 1px;
+    transition:background-color .15s ease;
+  }
+  .hl-red{color:var(--red);}
+  .hl-green{color:var(--green);}
+  .hl:hover{background:rgba(184,144,58,.16);}
+  @keyframes flashPulse{
+    0%{box-shadow:0 0 0 3px var(--gold); background:#FBF0D6;}
+    100%{box-shadow:0 0 0 0 rgba(184,144,58,0); background:var(--paper-2);}
+  }
+  .flash{animation:flashPulse 1.3s ease;}
+
+  .errors-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:26px;
+    margin-bottom:30px;
+  }
+  .err-col h3{display:flex; align-items:baseline; gap:8px;}
+  .err-col .count{
+    color:var(--paper);
+    background:var(--ink-soft);
+    border-radius:10px;
+    padding:0 7px;
+    font-size:.72rem;
+  }
+  .err-grammar h3{color:var(--red);}
+  .err-vocab h3{color:var(--green);}
+  .err-item{
+    border:1px solid var(--line);
+    background:var(--paper-2);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .err-item .err-wrong{margin:0 0 6px; font-size:1.05rem; font-weight:700;}
+  .err-grammar .err-wrong{color:var(--red);}
+  .err-vocab .err-wrong{color:var(--green);}
+  .err-item .note{margin:0 0 8px; font-size:.86rem; color:var(--ink-soft);}
+  .err-item .fix{
+    margin:0;
+    font-size:.94rem;
+    font-weight:600;
+    padding:0;
+  }
+  .err-grammar .fix{color:#8A2F1F;}
+  .err-vocab .fix{color:#1D6B49;}
+  .fix-arrow{font-weight:800;}
+  .err-grammar .fix-arrow{color:var(--red);}
+  .err-vocab .fix-arrow{color:var(--green);}
+  .fix-zh{font-weight:800; color:var(--accent);}
+  .empty-note{color:var(--ink-soft); font-size:.86rem; font-style:italic;}
+
+  .upgrade-item{
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .upgrade-item:last-child{border-bottom:none;}
+  .upgrade-item .from{color:var(--ink-soft); text-decoration:none;}
+  .upgrade-item .arrow{color:var(--gold); margin:0 8px; font-weight:800;}
+  .upgrade-item .to{
+    color:#154A32;
+    background:var(--green-soft);
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:10px;
+    border:1px solid var(--green);
+  }
+  .upgrade-item p.note{margin:5px 0 0; font-size:.86rem; color:var(--ink-soft);}
+
+  .sample-block h3{display:flex; align-items:center; gap:10px;}
+  .seal{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:26px; height:26px;
+    border:2px double var(--red);
+    color:var(--red);
+    font-size:.8rem;
+    transform:rotate(-8deg);
+    flex:none;
+  }
+  .sample-item{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .sample-item .sample-label{
+    margin:0 0 6px;
+    font-size:.78rem;
+    color:var(--ink-soft);
+  }
+  .sample-item .sample-text{margin:0; font-size:1.05rem;}
+
+  /* import overlay */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(36,31,23,.55);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    z-index:10;
+  }
+  .overlay[hidden]{display:none;}
+  .panel{
+    background:var(--paper);
+    border:1px solid var(--ink);
+    border-radius:var(--radius);
+    max-width:640px; width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:24px;
+  }
+  .panel-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .panel-head h2{margin:0; font-size:1.2rem; font-weight:normal; font-style:italic;}
+  .panel-head button{
+    background:none; border:none; font-size:1.1rem; color:var(--ink);
+  }
+  .panel-hint{font-size:.85rem; color:var(--ink-soft); margin:0 0 14px;}
+  #importArea{
+    width:100%;
+    font-family: 'Noto Sans SC', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size:.88rem;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    resize:vertical;
+  }
+  .panel-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:14px;}
+  .panel-actions button{
+    border:1px solid var(--ink);
+    background:var(--paper);
+    border-radius:var(--radius);
+    padding:9px 16px;
+    font-size:.86rem;
+  }
+  .panel-actions button.primary{background:var(--ink); color:var(--paper);}
+  .import-msg{margin-top:12px; font-size:.86rem;}
+  .import-msg.ok{color:var(--green);}
+  .import-msg.err{color:var(--red);}
+
+  .guide-box{margin:0 0 14px;}
+  .guide-toggle{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:7px 12px;
+    font-size:.82rem;
+    color:var(--accent);
+  }
+  .guide-toggle:hover{border-color:var(--accent);}
+  .guide-content{
+    margin-top:10px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-2);
+    padding:12px;
+  }
+  #guideText{
+    width:100%;
+    font-family:ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size:.78rem;
+    line-height:1.55;
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    resize:vertical;
+    color:var(--ink);
+  }
+  .guide-content-actions{
+    display:flex; align-items:center; gap:10px;
+    margin-top:8px;
+  }
+  .guide-content-actions button{
+    border:1px solid var(--ink);
+    background:var(--paper);
+    border-radius:var(--radius);
+    padding:7px 14px;
+    font-size:.82rem;
+  }
+  .guide-content-actions button:hover{background:var(--ink); color:var(--paper);}
+  .copy-msg{font-size:.8rem; color:var(--green);}
+
+  /* select-mode (tick chọn để xoá) trong sidebar */
+  .rail-actions button.active-toggle{background:var(--ink); color:var(--paper);}
+  .part-item.selectable{cursor:default;}
+  .part-check{
+    flex:none;
+    width:16px; height:16px;
+    accent-color:var(--red);
+    cursor:pointer;
+  }
+  .bulk-actions{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .bulk-actions[hidden]{display:none;}
+  .bulk-info{font-size:.8rem; color:var(--ink-soft);}
+  .bulk-actions button{
+    background:var(--paper);
+    border:1px solid var(--ink);
+    border-radius:var(--radius);
+    padding:8px 10px;
+    font-size:.82rem;
+    color:var(--ink);
+  }
+  .bulk-actions button:hover{background:var(--ink); color:var(--paper);}
+  .bulk-actions button.danger{border-color:var(--red); color:var(--red);}
+  .bulk-actions button.danger:hover{background:var(--red); color:var(--paper);}
+  .bulk-actions button.danger:disabled{opacity:.45; cursor:not-allowed; background:var(--paper); color:var(--red);}
+
+  /* nút sửa bài trong phần đầu trang */
+  .part-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px;}
+  .btn-edit-part{
+    flex:none;
+    background:var(--paper);
+    border:1px solid var(--gold);
+    color:var(--gold);
+    border-radius:var(--radius);
+    padding:6px 12px;
+    font-size:.8rem;
+    margin-top:4px;
+  }
+  .btn-edit-part:hover{background:var(--gold); color:var(--paper);}
+
+  /* bảng sửa dữ liệu */
+  .panel.panel-wide{max-width:760px;}
+  .edit-field{margin-bottom:16px;}
+  .edit-field > label{
+    display:block;
+    font-size:.78rem;
+    letter-spacing:.03em;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .edit-field input[type="text"], .edit-field textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:.92rem;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:#fff;
+    color:var(--ink);
+    resize:vertical;
+  }
+  .edit-section{margin:22px 0 18px; padding-top:14px; border-top:1px solid var(--line);}
+  .edit-section > h3{
+    font-size:.82rem;
+    font-weight:normal;
+    letter-spacing:.03em;
+    color:var(--gold);
+    margin:0 0 12px;
+  }
+  .edit-row{
+    position:relative;
+    border:1px solid var(--line);
+    background:var(--paper-2);
+    border-radius:var(--radius);
+    padding:12px 36px 4px 12px;
+    margin-bottom:10px;
+  }
+  .edit-row .edit-field{margin-bottom:10px;}
+  .edit-row .edit-field:last-child{margin-bottom:0;}
+  .edit-row .remove-row{
+    position:absolute;
+    top:8px; right:8px;
+    background:none;
+    border:none;
+    color:var(--red);
+    font-size:1rem;
+    line-height:1;
+    padding:2px 4px;
+  }
+  .edit-row .remove-row:hover{background:var(--red-soft); border-radius:2px;}
+  .btn-add-row{
+    background:var(--paper);
+    border:1px dashed var(--ink-soft);
+    color:var(--ink-soft);
+    border-radius:var(--radius);
+    padding:7px 12px;
+    font-size:.82rem;
+  }
+  .btn-add-row:hover{border-color:var(--ink); color:var(--ink);}
+  .edit-empty-hint{font-size:.82rem; color:var(--ink-soft); font-style:italic; margin:0 0 10px;}
+
+  @media (max-width:820px){
+    .app{grid-template-columns:1fr;}
+    .rail{
+      flex-direction:row;
+      align-items:center;
+      overflow-x:auto;
+      border-right:none;
+      border-bottom:1px solid var(--line);
+      padding:14px 16px;
+    }
+    .rail-head{display:none;}
+    .part-list{flex-direction:row; gap:8px;}
+    .part-item{flex-direction:column; white-space:nowrap;}
+    .rail-actions{flex-direction:row; margin:0 0 0 10px; padding:0 0 0 10px; border-top:none; border-left:1px solid var(--line);}
+    .bulk-actions{flex-direction:row; align-items:center; margin:0 0 0 10px; padding:0 0 0 10px; border-top:none; border-left:1px solid var(--line);}
+    .content{padding:28px 18px 60px;}
+    .prompt-block{margin:0 -18px 24px; padding:14px 18px 14px 15px;}
+    .errors-grid{grid-template-columns:1fr;}
+    .part-head{flex-direction:column; align-items:flex-start;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <span class="mark zh">译</span>
+      <div>
+        <h1>Luyện dịch HSK 6</h1>
+        <p>Việt → Trung · chấm bài &amp; sửa lỗi</p>
+      </div>
+    </div>
+    <nav class="part-list" id="partList"></nav>
+    <div class="rail-actions" id="railActions">
+      <button id="btnImport" class="icon-btn" data-tooltip="Nhập dữ liệu" aria-label="Nhập dữ liệu">＋</button>
+      <button id="btnReset" class="icon-btn" data-tooltip="Khôi phục mặc định" aria-label="Khôi phục mặc định">↺</button>
+      <button id="btnSelectMode" class="icon-btn" data-tooltip="Chọn bài để xoá" aria-label="Chọn bài để xoá">☑</button>
+    </div>
+    <div class="bulk-actions" id="bulkActions" hidden>
+      <span class="bulk-info" id="bulkInfo">Đã chọn 0 bài</span>
+      <button id="btnBulkDelete" class="danger" disabled>Xoá bài đã chọn</button>
+      <button id="btnBulkCancel">Huỷ</button>
+    </div>
+  </aside>
+
+  <main class="content" id="content"></main>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Nhập / Xuất dữ liệu</h2>
+      <button id="btnClosePanel" aria-label="Đóng">✕</button>
+    </div>
+    <p class="panel-hint">
+      Dán nội dung bài luyện dịch theo đúng cấu trúc gốc — mỗi bài bắt đầu bằng dòng
+      "BÀI n", có "1. Đề bài", "2. Phần trả lời của tôi", "3. Phần feedback" với mục
+      a. (lỗi sai) và b. (nâng cấp), và tuỳ chọn thêm "4. Bản dịch mẫu" gồm 2 đoạn dịch
+      (mỗi đoạn có dòng nhãn riêng, ví dụ "Bản dịch sát nghĩa:" / "Bản dịch văn phong
+      mượt mà:", theo sau là câu dịch trong dấu ngoặc kép) — để thêm bài mới vào danh
+      sách. Dữ liệu được lưu trực tiếp vào bộ nhớ trình duyệt (localStorage), chỉ trên máy này.
+    </p>
+    <div class="guide-box">
+      <button type="button" class="guide-toggle" id="btnToggleGuide" aria-expanded="false">📋 Xem hướng dẫn định dạng chi tiết (để đưa cho AI soạn bài)</button>
+      <div class="guide-content" id="guideContent" hidden>
+        <textarea id="guideText" rows="24" readonly></textarea>
+        <div class="guide-content-actions">
+          <button type="button" id="btnCopyGuide">Sao chép hướng dẫn</button>
+          <span class="copy-msg" id="copyGuideMsg" hidden>Đã sao chép!</span>
+        </div>
+      </div>
+    </div>
+    <textarea id="importArea" rows="14" placeholder="Dán nội dung bài luyện dịch vào đây..."></textarea>
+    <div class="panel-actions">
+      <button id="btnExport">Xuất dữ liệu hiện có</button>
+      <button id="btnParse" class="primary">Phân tích &amp; Lưu</button>
+    </div>
+    <p class="import-msg" id="importMsg" hidden></p>
+  </div>
+</div>
+
+<div class="overlay" id="editOverlay" hidden>
+  <div class="panel panel-wide">
+    <div class="panel-head">
+      <h2>Sửa bài</h2>
+      <button id="btnCloseEditPanel" aria-label="Đóng">✕</button>
+    </div>
+    <p class="panel-hint">Sửa trực tiếp nội dung bài, danh sách lỗi, nâng cấp từ vựng và bản dịch mẫu. Bấm "Lưu thay đổi" để ghi lại vào bộ nhớ trình duyệt.</p>
+
+    <div class="edit-field">
+      <label for="editTopic">Chủ đề</label>
+      <input type="text" id="editTopic">
+    </div>
+    <div class="edit-field">
+      <label for="editPrompt">Đề bài</label>
+      <textarea id="editPrompt" rows="3"></textarea>
+    </div>
+    <div class="edit-field">
+      <label for="editAnswer">Bài làm của tôi</label>
+      <textarea id="editAnswer" class="zh" rows="4"></textarea>
+    </div>
+
+    <div class="edit-section">
+      <h3>Sai ngữ pháp</h3>
+      <div id="editGrammarList"></div>
+      <button type="button" class="btn-add-row" id="btnAddGrammar">＋ Thêm lỗi ngữ pháp</button>
+    </div>
+
+    <div class="edit-section">
+      <h3>Sai từ vựng / dùng từ</h3>
+      <div id="editVocabList"></div>
+      <button type="button" class="btn-add-row" id="btnAddVocab">＋ Thêm lỗi từ vựng</button>
+    </div>
+
+    <div class="edit-section">
+      <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
+      <div id="editUpgradeList"></div>
+      <button type="button" class="btn-add-row" id="btnAddUpgrade">＋ Thêm mục nâng cấp</button>
+    </div>
+
+    <div class="edit-section">
+      <h3>Bản dịch mẫu</h3>
+      <div id="editSampleList"></div>
+      <button type="button" class="btn-add-row" id="btnAddSample">＋ Thêm bản dịch mẫu</button>
+    </div>
+
+    <div class="panel-actions">
+      <button id="btnEditCancel">Huỷ</button>
+      <button id="btnEditSave" class="primary">Lưu thay đổi</button>
+    </div>
+    <p class="import-msg" id="editMsg" hidden></p>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+// (Tuỳ chọn) Analytics nếu bạn muốn theo dõi lượng người truy cập
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+/* ============ Dữ liệu mặc định (6 bài từ tài liệu gốc) ============ */
+const DEFAULT_PARTS = [
+{
+  id:1, topic:"Toàn cầu hoá & phát triển bền vững",
+  prompt:"Trong bối cảnh toàn cầu hóa ngày càng sâu rộng, sự phát triển kinh tế bùng nổ thường đi kèm với cái giá phải trả là sự suy thoái môi trường sinh thái. Đối mặt với bài toán nan giải này, các quốc gia không thể nhắm mắt làm ngơ mà buộc phải tìm ra một con đường phát triển bền vững, hài hòa giữa lợi ích trước mắt và sự sinh tồn của các thế hệ tương lai.",
+  answer:"在全球化越来越深刻的背景下，经济爆发式的发展常常随着生态环境推弱的后果。面对这个难解的问题，各国家不能忽视而需要寻找发展悠久的道路，和谐目前的利益与未来后代的生存。",
+  grammar:[
+    {wrong:"和谐 + tân ngữ", note:"Trong tiếng Việt, \"hài hòa\" có thể làm động từ, nhưng trong tiếng Trung 和谐 chủ yếu là tính từ/danh từ, không thể mang tân ngữ trực tiếp.", fix:"Dùng động từ 平衡 (pínghéng) hoặc 协调 (xiétiáo)."},
+    {wrong:"常常随着…后果", note:"Cách nói này mang nặng văn phong \"Vietlish\" và đã bỏ sót cụm \"cái giá phải trả\".", fix:"Cấu trúc 往往伴随着…… kết hợp với 以……为代价 (lấy... làm cái giá phải trả)."}
+  ],
+  vocab:[
+    {wrong:"推弱", note:"Không có từ này để chỉ sự suy thoái môi trường. Cũng không dùng 衰退 (dành cho kinh tế/chức năng).", fix:"恶化 (è huà) hoặc 退化 (tuì huà)."},
+    {wrong:"发展悠久的道路", note:"\"Phát triển bền vững\" là thuật ngữ chuyên ngành cố định, không thể ghép chữ 悠久 (chỉ dùng cho lịch sử/thời gian lâu đời).", fix:"可持续发展 (kě chí xù fā zhǎn)."}
+  ],
+  upgrades:[
+    {from:"越来越深刻", to:"日益深入 / 不断深化", note:"Khi nói về bối cảnh, xu hướng, người bản xứ dùng cụm này sẽ tự nhiên và mang tính học thuật cao hơn 深刻."},
+    {from:"各国家", to:"各国", note:"Bỏ chữ 家 để cụm từ trở nên súc tích, chuyên nghiệp hơn trong văn bản viết."},
+    {from:"不能忽视", to:"视而不见 / 视若无睹", note:"Dùng thành ngữ để lột tả sắc thái \"nhắm mắt làm ngơ\" và thể hiện trình độ HSK 6."},
+    {from:"难解的问题", to:"棘手难题 (jí shǒu nán tí)", note:"Từ \"棘手\" (nan giải, hóc búa) nâng tầm câu văn cao cấp hơn nhiều so với 难解."},
+    {from:"目前的利益与未来后代的生存", to:"眼前利益与子孙后代", note:"Cụm cố định \"lợi ích trước mắt\" nên dùng 眼前利益 và \"thế hệ tương lai\" nên dùng 子孙后代 (zǐ sūn hòu dài)."}
+  ],
+  samples:[]
+},
+{
+  id:2, topic:"Trí tuệ nhân tạo & kỹ năng mềm",
+  prompt:"Sự trỗi dậy của trí tuệ nhân tạo không chỉ làm thay đổi hoàn toàn cách chúng ta làm việc mà còn đặt ra những thách thức chưa từng có về mặt đạo đức. Thay vì lo sợ bị thay thế, con người nên chủ động trau dồi những kỹ năng mềm mà máy móc không thể mô phỏng, từ đó củng cố vị thế độc tôn của mình trong một thế giới đầy biến động.",
+  answer:"人工智能的起不仅完全改变我们工作的方式而提出从来没出现过的道德挑战。害怕被替代，我们应该主动学习机器不能模仿的技能，从而在充满变动的石阶上巩固自己的独尊地位。",
+  grammar:[
+    {wrong:"的起", note:"Chữ 起 (qǐ) thường là động từ, không thể đứng một mình làm danh từ mang nghĩa \"sự trỗi dậy\".", fix:"崛起 (jué qǐ) hoặc 兴起 (xīng qǐ)."},
+    {wrong:"不仅……而……", note:"Cấu trúc \"không chỉ... mà còn...\" bắt buộc phải đi theo cặp, không thể dùng chữ 而 ở vế sau.", fix:"不仅……而且/还…… (bù jǐn... ér qiě / hái...)."},
+    {wrong:"害怕被替代，我们应该……", note:"Dịch sát nghĩa là \"Lo sợ bị thay thế, chúng ta nên...\", hoàn toàn mất đi cụm \"Thay vì\" (chỉ sự lựa chọn).", fix:"Dùng cấu trúc 与其……不如…… → 与其害怕被替代，人类不如主动……"}
+  ],
+  vocab:[
+    {wrong:"提出……挑战", note:"Trong tiếng Trung, 提出 (đề xuất, đưa ra) thường đi với \"vấn đề\", \"yêu cầu\", \"phương án\", không dùng cho \"mang lại/đặt ra thách thức\".", fix:"带来 (dài lái) hoặc 引发 (yǐn fā)."},
+    {wrong:"学习……技能", note:"Đề bài yêu cầu \"kỹ năng mềm\", bản dịch đã bỏ sót chữ \"mềm\".", fix:"软技能 (ruǎn jì néng)."},
+    {wrong:"石阶", note:"石阶 (shí jiē) nghĩa là \"bậc thang đá\" — gõ nhầm pinyin của từ \"thế giới\" (世界 - shì jiè).", fix:"世界."}
+  ],
+  upgrades:[
+    {from:"从来没出现过的", to:"前所未有的 (qián suǒ wèi yǒu de)", note:"Cụm bạn dùng đúng nghĩa nhưng rất giống văn nói (khẩu ngữ). Đạt chuẩn HSK 6 nên dùng thành ngữ \"tiền sở vị hữu\"."},
+    {from:"完全改变", to:"彻底改变 (chè dǐ gǎi biàn)", note:"Từ 彻底 (triệt để) đi với \"thay đổi\" mang sắc thái mạnh mẽ và học thuật hơn 完全."},
+    {from:"主动学习", to:"积极培养 / 提升 (jí jí péi yǎng / tí shēng)", note:"Kỹ năng mềm thường được \"bồi dưỡng\", \"trau dồi\" (培养) hơn là chỉ \"học\" (学习) đơn thuần."},
+    {from:"充满变动的", to:"瞬息万变的 (shùn xī wàn biàn de)", note:"Dùng thành ngữ \"biến đổi trong chớp mắt\" để miêu tả một thế giới thay đổi khôn lường."},
+    {from:"独尊地位", to:"不可替代的地位 / 不可撼动的地位", note:"独尊 trong tiếng Trung thường dùng cho tư tưởng hoặc ngôi vị võ lâm. Nói về vị thế con người, 不可替代/不可撼动 chuẩn xác và tự nhiên hơn."}
+  ],
+  samples:[
+    {label:"Bản dịch 1 (Sát nghĩa)", text:"人工智能的崛起不仅彻底改变了我们的工作方式，还带来了前所未有的道德挑战。与其害怕被替代，人类不如主动培养机器无法模仿的软技能，从而在充满变数的世界中巩固自己不可替代的地位。"},
+    {label:"Bản dịch 2 (Văn phong mượt mà)", text:"人工智能的强势崛起，不仅对我们的工作模式产生了颠覆性的改变，更引发了前所未有的伦理挑战。与其惶恐于被淘汰，人类更应积极修炼机器无法复刻的软技能，借此在瞬息万变的世界中，牢牢捍卫自身不可撼动的主导地位。"}
+  ]
+},
+{
+  id:3, topic:"Văn chương & sự thật",
+  prompt:"Văn chương chân chính không bao giờ đóng vai trò như một liều thuốc an thần để người ta trốn tránh hiện thực. Trái lại, nó là một lưỡi dao mổ sắc bén, dám rạch trần những góc khuất tăm tối nhất của nhân tính, buộc người đọc phải đối diện với những sự thật phũ phàng mà họ luôn cố tình lấp liếm.",
+  answer:"真正的文章从来没如安神药让人们躲藏现实。反而，他们是两面的？？，敢开人性最阴郁的角落，让读者需要对面他们想躲藏的残酷事实。",
+  grammar:[
+    {wrong:"他们", note:"Văn chương là vật vô tri, phải dùng 它 (nó), không dùng 他们 (bọn họ).", fix:"它."},
+    {wrong:"对面", note:"对面 (duì miàn) là danh từ/giới từ chỉ vị trí \"phía đối diện\", \"bên kia đường\". Để diễn đạt động từ \"đối diện với\" phải đổi ngược lại.", fix:"面对 (miàn duì) hoặc 直面 (zhí miàn)."}
+  ],
+  vocab:[
+    {wrong:"文章", note:"文章 (wén zhāng) là bài báo, bài viết cụ thể. Khi nói về \"văn chương\" với tư cách là loại hình nghệ thuật/khái niệm rộng, phải dùng 文学 (văn học).", fix:"文学."},
+    {wrong:"躲藏", note:"躲藏 (duǒ cáng) là hành động trốn tìm, ẩn nấp về mặt vật lý. Để nói \"trốn tránh\" (một vấn đề, trách nhiệm, hiện thực), bắt buộc phải dùng 逃避.", fix:"逃避 (táo bì)."},
+    {wrong:"两面的？？", note:"Có vẻ đang nghĩ đến \"con dao hai lưỡi\"? Trong đề bài là \"lưỡi dao mổ sắc bén\".", fix:"锋利的手术刀 (fēng lì de shǒu shù dāo)."}
+  ],
+  upgrades:[
+    {from:"从来没如……让……", to:"绝不充当……用来…… / 从来不是", note:"Cấu trúc \"从来没如\" không tồn tại trong tiếng Trung. Để lột tả \"không bao giờ đóng vai trò như\", người bản xứ sẽ nói 绝不充当."},
+    {from:"安神药", to:"麻醉剂 (má zuì jì)", note:"Thuốc an thần có thể dùng 镇静剂, nhưng trong văn học nghệ thuật, để lột tả ý \"làm mờ mắt, làm u mê\", 麻醉剂 được giới trí thức Trung Quốc sử dụng nhiều hơn."},
+    {from:"敢开", to:"敢于剖开 / 揭露 (gǎn yú pōu kāi / jiē lù)", note:"Chữ 开 quá đơn giản. Để thể hiện sự sắc bén của dao mổ khi \"rạch trần\", 剖开/揭露 mới đạt chuẩn HSK 6."},
+    {from:"阴郁", to:"幽暗 (yōu àn)", note:"阴郁 thường tả thời tiết u ám hoặc tâm trạng u sầu. Góc khuất \"tăm tối\" của nhân tính dùng 幽暗 hoặc 黑暗 sẽ sâu sắc hơn."},
+    {from:"让读者需要", to:"迫使读者 (pò shǐ dú zhě)", note:"Thay vì nói \"làm cho người đọc cần phải\", dùng động từ mạnh 迫使 (bức bách, buộc phải) sẽ sát với từ \"buộc\" trong đề bài hơn."},
+    {from:"想躲藏的", to:"刻意掩饰的 (kè yì yǎn shì de)", note:"\"Cố tình lấp liếm\" không chỉ là muốn trốn, mà là cố ý che giấu bề mặt. 刻意掩饰 hoặc 粉饰 là cực kỳ cao cấp."}
+  ],
+  samples:[
+    {label:"Bản dịch 1 (Sát nghĩa)", text:"真正的文学从来不充当让人们逃避现实的镇静剂。相反，它是一把锋利的手术刀，敢于剖开人性最黑暗的角落，迫使读者面对他们总是刻意掩饰的残酷真相。"},
+    {label:"Bản dịch 2 (Văn phong mượt mà)", text:"真正的文学绝非供人逃避现实的麻醉剂。截然相反，它宛如一把锋利的手术刀，敢于无情剖开人性最幽暗的角落，逼迫读者直面那些他们一向极力粉饰的冰冷残酷之事实。"}
+  ]
+},
+{
+  id:4, topic:"Thương trường & đổi mới sáng tạo",
+  prompt:"Trong thương trường khốc liệt, việc mù quáng bám víu vào những ánh hào quang của quá khứ chỉ đẩy doanh nghiệp đến bờ vực phá sản. Để sinh tồn, các nhà lãnh đạo phải có tầm nhìn xa trông rộng, dũng cảm đập bỏ mô hình kinh doanh lỗi thời và liên tục đổi mới sáng tạo.",
+  answer:"在残酷的商场，麻木紧把过去的光华只推企业到破产的边际。为了生存，各位领导要有遥远的眼光，勇敢地打破过时的经营模式和持续更新创造。",
+  grammar:[
+    {wrong:"只推企业到", note:"Động từ 推 (đẩy) không thể cộng trực tiếp tân ngữ rồi mới đến phương hướng trong tiếng Trung. Bắt buộc phải dùng câu chữ 把.", fix:"只会把企业推向…… (chỉ có thể đem doanh nghiệp đẩy về phía...)."},
+    {wrong:"和持续", note:"和 thường dùng để nối 2 danh từ hoặc cụm danh từ. Nối 2 hành động động từ phải dùng cấu trúc khác.", fix:"并不断... (và không ngừng...)."}
+  ],
+  vocab:[
+    {wrong:"麻木", note:"麻木 (má mù) nghĩa là \"tê liệt, tê mộc\" (cảm giác cơ thể hoặc sự thờ ơ). \"Mù quáng\" tương đương với 盲目 (nhắm mắt làm bừa).", fix:"盲目."},
+    {wrong:"紧把", note:"Không có từ \"紧把\" trong tiếng Trung. Để dịch \"bám víu/cố chấp giữ lấy\" nên dùng 死守 (sǐ shǒu) hoặc 固守 (gù shǒu).", fix:"死守 hoặc 固守."},
+    {wrong:"边际", note:"边际 thường dùng trong kinh tế học (chi phí biên) hoặc chỉ ranh giới vô tận. Để nói \"bờ vực/mép\" phải dùng 边缘.", fix:"破产的边缘."},
+    {wrong:"遥远的眼光", note:"遥远 (diêu viễn) chỉ dùng cho khoảng cách địa lý hoặc thời gian rất xa. \"Tầm nhìn xa\" phải dùng 长远的眼光.", fix:"长远的眼光 (cháng yuǎn de yǎn guāng)."},
+    {wrong:"更新创造", note:"Tiếng Việt nói \"đổi mới sáng tạo\", nhưng tiếng Trung đã có một từ vựng HSK tiêu chuẩn bao hàm trọn vẹn nghĩa này.", fix:"创新 (chuàng xīn)."}
+  ],
+  upgrades:[
+    {from:"残酷的商场", to:"激烈的商业竞争中 / 残酷的商海", note:"商场 thường mang nghĩa đen là trung tâm thương mại. Chỉ \"thương trường\" trừu tượng, người bản xứ dùng 商海 hoặc 商业竞争."},
+    {from:"过去的光华", to:"昔日的辉煌 (xī rì de huī huáng)", note:"\"Ánh hào quang của quá khứ\" là cụm tu từ rất hay gặp, dịch chuẩn HSK 6 phải là 昔日的辉煌."},
+    {from:"各位领导", to:"领导者 / 企业决策者", note:"各位领导 mang sắc thái văn nói. Trong văn viết chỉ cần dùng 领导者 hoặc 决策者."},
+    {from:"要有远长的眼光", to:"高瞻远瞩 (gāo zhān yuǎn zhǔ)", note:"Thay vì dùng cụm từ dài, có thể thay bằng thành ngữ \"đứng trên cao nhìn ra xa\" — tầm nhìn xa trông rộng."},
+    {from:"打破", to:"摒弃 (bìng qì) / 颠覆 (diān fù)", note:"\"Đập bỏ/từ bỏ\" mô hình cũ dùng 摒弃 (vứt bỏ) hoặc 颠覆 (lật đổ) sẽ học thuật và mạnh mẽ hơn nhiều so với 打破."}
+  ],
+  samples:[
+    {label:"Bản dịch 1 (Sát nghĩa)", text:"在残酷的商业竞争中，盲目固守昔日的辉煌只会把企业推向破产的边缘。为了生存，领导者必须具备长远的眼光，勇敢地打破过时的经营模式，并不断进行创新。"},
+    {label:"Bản dịch 2 (Văn phong mượt mà)", text:"在竞争激烈的商海中，盲目沉湎于昔日的辉煌只会将企业推向破产的边缘。求生之道在于，决策者必须高瞻远瞩，果断摒弃陈腐的商业模式，并持续推动创新。"}
+  ]
+},
+{
+  id:5, topic:"Di sản văn hoá & hiện đại hoá",
+  prompt:"Di sản văn hóa không phải là những tàn tích vô hồn bị lãng quên trong viện bảo tàng, mà là huyết mạch kết nối quá khứ và hiện tại. Việc bảo tồn chúng đòi hỏi sự nỗ lực chung của toàn xã hội, nhằm đảm bảo rằng cội nguồn dân tộc không bị cuốn trôi bởi làn sóng hiện đại hóa.",
+  answer:"文化遗产不是无魂的残迹被忘在保藏里，而是血脉链接过去与现在。保存它们需要全社会的共同的努力，为了保证民族的原来不被现代化的波浪打去。",
+  grammar:[
+    {wrong:"残迹被忘在...", note:"Trong tiếng Trung, thành phần bổ nghĩa (bị lãng quên trong viện bảo tàng) phải đặt TRƯỚC danh từ trung tâm (những tàn tích).", fix:"被遗忘在...里的残迹."}
+  ],
+  vocab:[
+    {wrong:"保藏", note:"保藏 (bǎo cáng) là động từ mang nghĩa cất giữ, bảo quản. \"Viện bảo tàng\" phải là 博物馆 (bó wù guǎn).", fix:"博物馆."},
+    {wrong:"链接", note:"链接 (liàn jiē) chủ yếu được dùng làm danh từ/động từ cho \"đường link / siêu liên kết\" trên internet. Nói \"kết nối\" thời gian/con người phải dùng 连接.", fix:"连接 (lián jiē)."},
+    {wrong:"民族的原来", note:"原来 (hóa ra, vốn dĩ) là phó từ hoặc tính từ, hoàn toàn không mang nghĩa \"cội nguồn\".", fix:"民族的根基 hoặc 民族的根脉."},
+    {wrong:"波浪打去", note:"波浪 là sóng nước vật lý trên biển. \"Làn sóng\" (nghĩa bóng) phải dùng 浪潮. \"Cuốn trôi\" không thể ghép là \"打去\".", fix:"淹没 (yān mò - nhấn chìm) hoặc 吞噬 (tūn shì - nuốt chửng)."}
+  ],
+  upgrades:[
+    {from:"无魂的", to:"毫无生气的 (háo wú shēng qì de) / 冰冷的 (bīng lěng de)", note:"\"Vô hồn\" có thể dịch linh hoạt thành \"không có sinh khí\" hoặc \"lạnh lẽo\" sẽ mang tính văn học cao hơn."},
+    {from:"保存", to:"保护 (bǎo hù) / 传承 (chuán chéng)", note:"Đối với di sản văn hóa, người ta dùng cụm từ cố định \"bảo vệ và lưu truyền\" chứ ít dùng chữ 保存 (chỉ mang ý cất giữ vật chất)."},
+    {from:"共同的努力", to:"共同努力 / 齐心协力 (qí xīn xié lì)", note:"Bỏ chữ 的 đi câu sẽ thanh thoát hơn. Nếu muốn dùng thành ngữ có thể dùng \"đồng tâm hiệp lực\"."},
+    {from:"血脉链接过去与现在", to:"连接过去与现在的血脉 / 贯通古今的血脉", note:"\"Huyết mạch\" là danh từ chính, cụm bổ nghĩa phải đưa lên trước. \"Quá khứ và hiện tại\" có thể tóm gọn bằng hai chữ 古今 (cổ kim)."}
+  ],
+  samples:[
+    {label:"Bản dịch 1 (Sát nghĩa)", text:"文化遗产不是被遗忘在博物馆里毫无生气的遗迹，而是连接过去与现在的血脉。保护它们需要全社会的共同努力，以确保民族的根脉不被现代化的浪潮所吞噬。"},
+    {label:"Bản dịch 2 (Văn phong mượt mà)", text:"文化遗产绝非被遗忘在博物馆中冰冷的残垣断壁，而是贯通古今的文化血脉。对其进行保护与传承亟需全社会齐心协力，以捍卫民族之根基，使其免遭现代化浪潮的淹没。"}
+  ]
+},
+{
+  id:6, topic:"Trì hoãn & tâm lý con người",
+  prompt:"Sự trì hoãn thường bắt nguồn từ nỗi sợ thất bại hơn là sự lười biếng. Khi đối mặt với những nhiệm vụ phức tạp, tâm trí con người có xu hướng tìm kiếm những sự thỏa mãn tức thời để giải tỏa áp lực tâm lý, từ đó tạo ra một vòng lặp né tránh không lối thoát.",
+  answer:"推迟常常起源自害怕失败多过懒。当面对复杂的任务，人类的心智倾向于寻找缓解压力的短暂满意感觉，从而创作没有出口的逃避循环。",
+  grammar:[
+    {wrong:"多过懒", note:"\"A nhiều hơn B\" trong tiếng Việt không thể dịch là \"A 多过 B\" một cách trực tiếp trong văn viết trang trọng, lại càng không thể để cụt lủn một chữ 懒.", fix:"与其说是懒惰，不如说是…… hoặc 更多是源于……而不是单纯的懒惰."}
+  ],
+  vocab:[
+    {wrong:"推迟", note:"推迟 (tuī chí) nghĩa là hoãn lại một sự kiện, cuộc họp (có chủ đích). \"Sự trì hoãn\" như một trạng thái tâm lý/thói quen xấu phải dùng 拖延 hoặc 拖延症.", fix:"拖延 (tuō yán) hoặc 拖延症."},
+    {wrong:"创作", note:"创作 (chuàng zuò) dùng cho việc sáng tác nghệ thuật (văn học, âm nhạc). Để nói \"tạo ra một vòng lặp\" cần động từ khác.", fix:"形成 (xíng chéng - hình thành) hoặc 陷入 (xiàn rù - rơi vào)."},
+    {wrong:"短暂满意感觉", note:"Cụm \"sự thỏa mãn tức thời\" là một thuật ngữ cực kỳ phổ biến trong tâm lý học. Người bản xứ không dịch dài dòng mà dùng 4 chữ.", fix:"即时满足 (jí shí mǎn zú)."},
+    {wrong:"没有出口的", note:"出口 là lối ra (cửa thoát hiểm, lối ra đường cao tốc). \"Vòng lặp không lối thoát\" dùng cụm cố định khác.", fix:"死循环 (vòng lặp chết) hoặc 无法自拔的恶性循环."}
+  ],
+  upgrades:[
+    {from:"起源自", to:"源于 (yuán yú)", note:"\"源于\" (bắt nguồn từ) gọn gàng và mang tính học thuật cao hơn 起源自."},
+    {from:"害怕失败", to:"对失败的恐惧 (duì shī bài de kǒng jù) / 畏惧失败", note:"Biến cụm động - tân thành một cụm danh từ hoặc dùng động từ cấp cao 畏惧 sẽ giúp câu mang dáng dấp văn viết HSK 6."},
+    {from:"心智倾向于", to:"大脑往往会倾向于 / 潜意识会倾向于", note:"\"Tâm trí\" trong ngữ cảnh này có thể dịch là 潜意识 (tiềm thức) hoặc 大脑 (não bộ) sẽ tự nhiên hơn trong tâm lý học."}
+  ],
+  samples:[
+    {label:"Bản dịch 1 (Sát nghĩa)", text:"拖延往往源于对失败的恐惧，而不是单纯的懒惰。在面对复杂的任务时，人类的大脑倾向于寻找即时满足来缓解心理压力，从而形成一个没有出路的逃避循环。"},
+    {label:"Bản dịch 2 (Văn phong mượt mà)", text:"拖延症的根源，与其说是生性懒惰，不如说是对失败的深深畏惧。当直面棘手任务时，人的潜意识往往会倾向于寻求即时满足以释放心理重负，进而陷入一种无法自拔的逃避性恶性循环。"}
+  ]
+}
+];
+
+/* ============ Cấu hình Firebase ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAtxWw8FI0KntB7L1CTDbbEJUltW1pqgWA",
+  authDomain: "translate-123f1.firebaseapp.com",
+  projectId: "translate-123f1",
+  // Lưu ý: Nếu database của bạn không chạy, hãy kiểm tra link databaseURL trong mục Realtime Database và thay vào đây
+  databaseURL: "https://translate-123f1-default-rtdb.firebaseio.com",
+  storageBucket: "translate-123f1.firebasestorage.app",
+  messagingSenderId: "827145278197",
+  appId: "1:827145278197:web:5c8bc84a7460c00936ebbc",
+  measurementId: "G-M5S5Q8PPC5"
+};
+
+// Khởi tạo Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getDatabase(app);
+const DB_REF_PATH = "hsk_translate_data"; // Nơi lưu trữ toàn bộ dữ liệu trên mây
+
+/* ============ Các hàm xử lý dữ liệu với Firebase ============ */
+let parts = []; // Khởi tạo rỗng, sẽ tải từ đám mây về
+let currentIndex = 0;
+let selectMode = false;
+let selectedForDelete = new Set();
+
+function normalizeStr(s){
+  return (typeof s === "string" && s.normalize) ? s.normalize("NFC") : s;
+}
+
+function normalizeDeepInPlace(obj){
+  if(Array.isArray(obj)){
+    obj.forEach(normalizeDeepInPlace);
+  } else if(obj && typeof obj === "object"){
+    Object.keys(obj).forEach(k=>{
+      if(typeof obj[k] === "string") obj[k] = normalizeStr(obj[k]);
+      else normalizeDeepInPlace(obj[k]);
+    });
+  }
+}
+
+// Hàm đẩy dữ liệu lên Firebase
+window.saveParts = function(partsToSave) {
+  normalizeDeepInPlace(partsToSave);
+  try {
+    set(ref(db, DB_REF_PATH), partsToSave);
+    return true;
+  } catch(e) {
+    console.error("Không thể lưu dữ liệu lên đám mây:", e);
+    return false;
+  }
+};
+
+// Hàm tải dữ liệu từ Firebase
+async function initCloudData() {
+  document.getElementById("content").innerHTML = "<p style='text-align:center; margin-top:40px;'>Đang kết nối và tải dữ liệu từ đám mây...</p>";
+  try {
+    const snapshot = await get(ref(db, DB_REF_PATH));
+    if (snapshot.exists()) {
+      parts = snapshot.val();
+      normalizeDeepInPlace(parts);
+    } else {
+      // Nếu trên mây chưa có gì (lần chạy đầu), lấy mặc định đẩy lên
+      parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+      window.saveParts(parts);
+    }
+  } catch (error) {
+    console.error("Lỗi khi tải dữ liệu, sử dụng mặc định:", error);
+    parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  }
+  
+  // Sau khi tải xong data, vẽ giao diện
+  renderSidebar();
+  renderMain();
+}
+
+/* ============ Các hàm Render giao diện (Giữ nguyên của bạn) ============ */
+function errCount(p){ return (p.grammar ? p.grammar.length : 0) + (p.vocab ? p.vocab.length : 0); }
+
+function renderSidebar(){
+  const list = document.getElementById("partList");
+  list.innerHTML = "";
+  parts.forEach((p, i)=>{
+    const btn = document.createElement("button");
+    btn.className = "part-item" + (i===currentIndex ? " active" : "") + (selectMode ? " selectable" : "");
+    let inner = "";
+    if(selectMode){
+      inner += '<input type="checkbox" class="part-check" data-index="' + i + '"' +
+               (selectedForDelete.has(i) ? " checked" : "") + '>';
+    }
+    inner += '<span class="pi-title">Bài ' + (i+1) + '<small>' + escapeHtml(p.topic||"") + '</small></span>' +
+             '<span class="pi-count">' + errCount(p) + '</span>';
+    btn.innerHTML = inner;
+    if(selectMode){
+      // Trong chế độ chọn, bấm vào cả dòng cũng bật/tắt tick (không chuyển bài).
+      btn.addEventListener("click", (e)=>{
+        if(e.target.classList.contains("part-check")) return; // checkbox tự xử lý qua sự kiện change
+        toggleSelectIndex(i);
+      });
+    } else {
+      btn.addEventListener("click", ()=>{ currentIndex = i; renderSidebar(); renderMain(); });
+    }
+    list.appendChild(btn);
+  });
+}
+
+function toggleSelectIndex(i){
+  if(selectedForDelete.has(i)) selectedForDelete.delete(i);
+  else selectedForDelete.add(i);
+  renderSidebar();
+  updateBulkBar();
+}
+
+function updateBulkBar(){
+  const info = document.getElementById("bulkInfo");
+  const delBtn = document.getElementById("btnBulkDelete");
+  info.textContent = "Đã chọn " + selectedForDelete.size + " bài";
+  delBtn.disabled = selectedForDelete.size === 0;
+}
+
+function setSelectMode(on){
+  selectMode = on;
+  selectedForDelete.clear();
+  document.getElementById("railActions").hidden = on;
+  document.getElementById("bulkActions").hidden = !on;
+  if(on) updateBulkBar();
+  renderSidebar();
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+}
+
+function highlightZh(escapedText){
+  return escapedText.replace(/[\u4e00-\u9fff][\u4e00-\u9fff\u3001-\u303f\uff00-\uffef.…]*/g, function(m){
+    return '<span class="fix-zh">' + m + '</span>';
+  });
+}
+
+function extractZhFragments(s){
+  if(!s) return [];
+  let m = s.match(/[\u4e00-\u9fff]{2,}/g);
+  if(!m || !m.length) m = s.match(/[\u4e00-\u9fff]/g);
+  return m || [];
+}
+
+function buildAnswerHtml(p){
+  const text = p.answer || "";
+  const candidates = [];
+  (p.grammar||[]).forEach((item, i)=>{
+    extractZhFragments(item.wrong).forEach(frag=>{
+      const idx = text.indexOf(frag);
+      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-red", target:"err-g-"+i});
+    });
+  });
+  (p.vocab||[]).forEach((item, i)=>{
+    extractZhFragments(item.wrong).forEach(frag=>{
+      const idx = text.indexOf(frag);
+      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-red", target:"err-v-"+i});
+    });
+  });
+  (p.upgrades||[]).forEach((item, i)=>{
+    extractZhFragments(item.from).forEach(frag=>{
+      const idx = text.indexOf(frag);
+      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-green", target:"upg-"+i});
+    });
+  });
+  candidates.sort((a,b)=> a.start - b.start || (b.end-b.start) - (a.end-a.start));
+  const accepted = [];
+  let lastEnd = -1;
+  candidates.forEach(c=>{
+    if(c.start >= lastEnd){ accepted.push(c); lastEnd = c.end; }
+  });
+  let html = "", pos = 0;
+  accepted.forEach(c=>{
+    html += escapeHtml(text.slice(pos, c.start));
+    html += '<span class="hl ' + c.cls + '" data-target="' + c.target + '" tabindex="0" role="button">' +
+            escapeHtml(text.slice(c.start, c.end)) + '</span>';
+    pos = c.end;
+  });
+  html += escapeHtml(text.slice(pos));
+  return html;
+}
+
+function errItemHtml(item, id){
+  return '<div class="err-item" id="' + id + '">' +
+    '<p class="zh err-wrong">' + escapeHtml(item.wrong) + '</p>' +
+    (item.note ? '<p class="note">' + escapeHtml(item.note) + '</p>' : '') +
+    (item.fix ? '<p class="fix"><span class="fix-arrow">→</span> ' + highlightZh(escapeHtml(item.fix)) + '</p>' : '') +
+    '</div>';
+}
+
+function renderMain(){
+  const p = parts[currentIndex];
+  if(!p){ document.getElementById("content").innerHTML = "<p>Chưa có dữ liệu.</p>"; return; }
+  const html = `
+    <header class="part-head">
+      <h2>Bài ${currentIndex+1}. ${escapeHtml(p.topic||"")}</h2>
+      <button type="button" class="btn-edit-part" id="btnEditPart">✎ Sửa bài này</button>
+    </header>
+
+    <section class="block prompt-block">
+      <h3>Đề bài</h3>
+      <p class="vi">${escapeHtml(p.prompt)}</p>
+    </section>
+
+    <section class="block answer-block">
+      <h3>Bài làm của tôi</h3>
+      <p class="zh">${buildAnswerHtml(p)}</p>
+    </section>
+
+    <section class="errors-grid">
+      <div class="err-col err-grammar">
+        <h3>Sai ngữ pháp <span class="count">${p.grammar.length}</span></h3>
+        ${p.grammar.length ? p.grammar.map((it,i)=>errItemHtml(it,"err-g-"+i)).join("") : '<p class="empty-note">Không có lỗi ngữ pháp được ghi nhận.</p>'}
+      </div>
+      <div class="err-col err-vocab">
+        <h3>Sai từ vựng / dùng từ <span class="count">${p.vocab.length}</span></h3>
+        ${p.vocab.length ? p.vocab.map((it,i)=>errItemHtml(it,"err-v-"+i)).join("") : '<p class="empty-note">Không có lỗi dùng từ được ghi nhận.</p>'}
+      </div>
+    </section>
+
+    ${p.upgrades && p.upgrades.length ? `
+    <section class="block upgrade-block">
+      <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
+      ${p.upgrades.map((u,i) => `
+        <div class="upgrade-item" id="upg-${i}">
+          <span class="zh from">${escapeHtml(u.from)}</span><span class="arrow">→</span><span class="zh to">${escapeHtml(u.to)}</span>
+          ${u.note ? '<p class="note">'+escapeHtml(u.note)+'</p>' : ''}
+        </div>
+      `).join("")}
+    </section>` : ""}
+
+    ${p.samples && p.samples.length ? `
+    <section class="block sample-block">
+      <h3><span class="seal zh">校</span>Bản dịch mẫu</h3>
+      ${p.samples.map(s => `
+        <div class="sample-item">
+          <p class="sample-label">${escapeHtml(s.label)}</p>
+          <p class="zh sample-text">${escapeHtml(s.text)}</p>
+        </div>
+      `).join("")}
+    </section>` : ""}
+  `;
+  document.getElementById("content").innerHTML = html;
+}
+
+/* ============ Sửa dữ liệu hiện có (edit panel) ============ */
+const GRAMMAR_FIELDS = [
+  {key:"wrong", label:"Chỗ sai (chữ Hán / cấu trúc)", type:"text"},
+  {key:"note",  label:"Ghi chú giải thích",            type:"textarea", rows:2},
+  {key:"fix",   label:"Sửa thành",                     type:"text"}
+];
+const VOCAB_FIELDS = GRAMMAR_FIELDS;
+const UPGRADE_FIELDS = [
+  {key:"from",  label:"Từ / cụm gốc",     type:"text"},
+  {key:"to",    label:"Nâng cấp thành",   type:"text"},
+  {key:"note",  label:"Ghi chú",          type:"textarea", rows:2}
+];
+const SAMPLE_FIELDS = [
+  {key:"label", label:"Nhãn (vd: Bản dịch 1 - Sát nghĩa)", type:"text"},
+  {key:"text",  label:"Nội dung bản dịch",                 type:"textarea", rows:3}
+];
+
+function escapeAttr(s){
+  return (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+
+function addEditRow(containerId, fieldsSpec, values){
+  const container = document.getElementById(containerId);
+  const row = document.createElement("div");
+  row.className = "edit-row";
+  let html = '<button type="button" class="remove-row" aria-label="Xoá dòng">✕</button>';
+  fieldsSpec.forEach(f=>{
+    const val = (values && values[f.key] !== undefined) ? values[f.key] : "";
+    if(f.type === "textarea"){
+      html += '<div class="edit-field"><label>' + f.label + '</label>' +
+              '<textarea class="f-' + f.key + '" rows="' + (f.rows||2) + '">' + escapeHtml(val) + '</textarea></div>';
+    } else {
+      html += '<div class="edit-field"><label>' + f.label + '</label>' +
+              '<input type="text" class="f-' + f.key + '" value="' + escapeAttr(val) + '"></div>';
+    }
+  });
+  row.innerHTML = html;
+  container.appendChild(row);
+}
+
+function collectRows(containerId, fieldsSpec){
+  const container = document.getElementById(containerId);
+  return Array.from(container.querySelectorAll(".edit-row")).map(row=>{
+    const obj = {};
+    fieldsSpec.forEach(f=>{
+      const el = row.querySelector(".f-" + f.key);
+      obj[f.key] = el ? el.value.trim() : "";
+    });
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => v));
+}
+
+let editingIndex = null;
+const editOverlay = document.getElementById("editOverlay");
+
+function openEditPanel(index){
+  const p = parts[index];
+  if(!p) return;
+  editingIndex = index;
+  document.getElementById("editTopic").value = p.topic || "";
+  document.getElementById("editPrompt").value = p.prompt || "";
+  document.getElementById("editAnswer").value = p.answer || "";
+
+  ["editGrammarList","editVocabList","editUpgradeList","editSampleList"].forEach(id=>{
+    document.getElementById(id).innerHTML = "";
+  });
+  (p.grammar||[]).forEach(item => addEditRow("editGrammarList", GRAMMAR_FIELDS, item));
+  (p.vocab||[]).forEach(item => addEditRow("editVocabList", VOCAB_FIELDS, item));
+  (p.upgrades||[]).forEach(item => addEditRow("editUpgradeList", UPGRADE_FIELDS, item));
+  (p.samples||[]).forEach(item => addEditRow("editSampleList", SAMPLE_FIELDS, item));
+
+  const msg = document.getElementById("editMsg");
+  msg.hidden = true;
+  editOverlay.hidden = false;
+}
+function closeEditPanel(){
+  editOverlay.hidden = true;
+  editingIndex = null;
+}
+
+document.getElementById("btnCloseEditPanel").addEventListener("click", closeEditPanel);
+document.getElementById("btnEditCancel").addEventListener("click", closeEditPanel);
+editOverlay.addEventListener("click", (e)=>{ if(e.target === editOverlay) closeEditPanel(); });
+
+document.getElementById("btnAddGrammar").addEventListener("click", ()=> addEditRow("editGrammarList", GRAMMAR_FIELDS, {}));
+document.getElementById("btnAddVocab").addEventListener("click", ()=> addEditRow("editVocabList", VOCAB_FIELDS, {}));
+document.getElementById("btnAddUpgrade").addEventListener("click", ()=> addEditRow("editUpgradeList", UPGRADE_FIELDS, {}));
+document.getElementById("btnAddSample").addEventListener("click", ()=> addEditRow("editSampleList", SAMPLE_FIELDS, {}));
+
+editOverlay.addEventListener("click", (e)=>{
+  const btn = e.target.closest(".remove-row");
+  if(!btn) return;
+  btn.closest(".edit-row").remove();
+});
+
+document.getElementById("btnEditSave").addEventListener("click", ()=>{
+  if(editingIndex === null) return;
+  const topic = document.getElementById("editTopic").value.trim();
+  const prompt = document.getElementById("editPrompt").value.trim();
+  const answer = document.getElementById("editAnswer").value.trim();
+  const msg = document.getElementById("editMsg");
+  if(!prompt || !answer){
+    msg.hidden = false; msg.className = "import-msg err";
+    msg.textContent = "Đề bài và Bài làm của tôi không được để trống.";
+    return;
+  }
+  const grammar  = collectRows("editGrammarList", GRAMMAR_FIELDS);
+  const vocab    = collectRows("editVocabList", VOCAB_FIELDS);
+  const upgrades = collectRows("editUpgradeList", UPGRADE_FIELDS);
+  const samples  = collectRows("editSampleList", SAMPLE_FIELDS);
+
+  const existing = parts[editingIndex] || {};
+  parts[editingIndex] = {
+    id: existing.id !== undefined ? existing.id : (Date.now() + Math.random()),
+    topic, prompt, answer, grammar, vocab, upgrades, samples
+  };
+  saveParts(parts);
+  closeEditPanel();
+  renderSidebar();
+  renderMain();
+});
+
+document.getElementById("content").addEventListener("click", (e)=>{
+  if(e.target.closest("#btnEditPart")) openEditPanel(currentIndex);
+});
+
+/* ============ Import panel wiring ============ */
+const overlay = document.getElementById("overlay");
+const importArea = document.getElementById("importArea");
+const importMsg = document.getElementById("importMsg");
+
+document.getElementById("btnImport").addEventListener("click", ()=>{
+  importMsg.hidden = true;
+  overlay.hidden = false;
+  importArea.focus();
+});
+document.getElementById("btnClosePanel").addEventListener("click", ()=> overlay.hidden = true);
+overlay.addEventListener("click", (e)=>{ if(e.target === overlay) overlay.hidden = true; });
+
+/* ============ Hướng dẫn định dạng (để copy đưa cho AI soạn bài) ============ */
+const IMPORT_FORMAT_GUIDE = [
+"HƯỚNG DẪN ĐỊNH DẠNG BÀI LUYỆN DỊCH (Việt → Trung, HSK 6)",
+"Hãy soạn bài theo ĐÚNG cấu trúc dưới đây, vì nội dung sẽ được dán vào một",
+"công cụ tự động tách dữ liệu theo mẫu cố định. Sai một ký tự nhỏ (dấu ngoặc kép,",
+"dấu hai chấm, dòng trống...) có thể khiến công cụ đọc sai hoặc bỏ sót.",
+"",
+"QUY TẮC CHUNG",
+"- Mỗi bài bắt đầu bằng một dòng riêng: BÀI n (n là số thứ tự, ví dụ: BÀI 7).",
+"- Nếu soạn nhiều bài trong cùng một lần, chỉ cần mỗi bài bắt đầu bằng dòng",
+"  \"BÀI n\" mới là được, không cần thêm ký hiệu phân cách nào khác.",
+"- Chỉ dùng dấu ngoặc kép thẳng \" \" (không dùng ngoặc kép cong “ ” hay dấu '').",
+"- Chỉ dùng đúng ký hiệu mũi tên ➡️ ở mục nâng cấp (không thay bằng ->, →, hay chữ).",
+"",
+"CẤU TRÚC MỘT BÀI",
+"",
+"BÀI n",
+"1. Đề bài",
+"\"Câu đề bài tiếng Việt cần dịch sang tiếng Trung.\"",
+"",
+"2. Phần trả lời của tôi",
+"\"Câu bài làm tiếng Trung của người học.\"",
+"",
+"3. Phần feedback",
+"",
+"a. Phần dùng sai",
+"\"cụm/câu bị sai\" (loại lỗi): ghi chú giải thích vì sao sai.",
+"Sửa thành: cụm/câu đã sửa đúng",
+"",
+"\"cụm/câu bị sai khác\" (loại lỗi khác): ghi chú giải thích.",
+"Sửa thành: cụm đã sửa",
+"",
+"b. Phần có thể cải thiện",
+"\"cụm gốc\" ➡️ cụm nâng cấp hơn: ghi chú giải thích vì sao nâng cấp hay hơn.",
+"",
+"Bản dịch mẫu",
+"",
+"Bản dịch sát nghĩa:",
+"",
+"\"Bản dịch bám sát nghĩa từng chữ của đề bài.\"",
+"",
+"Bản dịch văn phong mượt mà:",
+"",
+"\"Bản dịch tự nhiên, văn phong hay hơn.\"",
+"",
+"LƯU Ý QUAN TRỌNG KHI SOẠN (bắt buộc tuân thủ)",
+"1) Dòng \"Sửa thành:\" phải nằm NGAY DÒNG KẾ TIẾP của câu ghi chú — KHÔNG được",
+"   để dòng trống giữa ghi chú và \"Sửa thành:\". Nếu có dòng trống ở giữa, phần",
+"   sửa sẽ bị tách rời và bị mất khỏi bài.",
+"2) Giữa các mục lỗi khác nhau trong mục a., và giữa các mục nâng cấp khác nhau",
+"   trong mục b., PHẢI cách nhau đúng 1 dòng trống.",
+"3) Loại lỗi ghi trong dấu ngoặc đơn ở mục a. quyết định lỗi đó xếp vào nhóm",
+"   \"lỗi ngữ pháp\" hay \"lỗi từ vựng\":",
+"   - Ghi một trong các từ: \"ngữ pháp\", \"cấu trúc\", \"từ loại\", \"đại từ\",",
+"     \"mệnh đề\" → xếp vào nhóm LỖI NGỮ PHÁP.",
+"   - Ghi nhãn khác (ví dụ \"từ vựng\") → xếp vào nhóm LỖI TỪ VỰNG.",
+"4) Mục \"Bản dịch mẫu\" là TUỲ CHỌN (có thể bỏ qua). Nếu có thì viết đúng như",
+"   mẫu ở trên: viết riêng dòng tiêu đề \"Bản dịch mẫu\" (không cần đánh số 4.,",
+"   không viết dính liền chữ khác); mỗi bản dịch gồm 1 dòng nhãn ngắn gọn",
+"   (dưới 80 ký tự, không chứa dấu ngoặc kép) và 1 dòng câu dịch trong ngoặc",
+"   kép, HAI DÒNG NÀY PHẢI CÁCH NHAU 1 DÒNG TRỐNG. Các bản dịch với nhau",
+"   cũng cách nhau 1 dòng trống.",
+"5) Có thể có nhiều hơn 1 lỗi ở mục a. và nhiều hơn 1 mục nâng cấp ở mục b.,",
+"   cứ thêm khối tương ứng, cách nhau 1 dòng trống theo đúng quy tắc (2).",
+"6) Không thêm chữ hay ký hiệu nào khác ngoài cấu trúc trên (không thêm gạch",
+"   đầu dòng, không đánh số phụ, không thêm ghi chú ngoài lề)."
+].join("\n");
+document.getElementById("guideText").value = IMPORT_FORMAT_GUIDE;
+
+const btnToggleGuide = document.getElementById("btnToggleGuide");
+const guideContent = document.getElementById("guideContent");
+btnToggleGuide.addEventListener("click", ()=>{
+  const show = guideContent.hidden;
+  guideContent.hidden = !show;
+  btnToggleGuide.setAttribute("aria-expanded", String(show));
+  btnToggleGuide.textContent = show
+    ? "📋 Ẩn hướng dẫn định dạng chi tiết"
+    : "📋 Xem hướng dẫn định dạng chi tiết (để đưa cho AI soạn bài)";
+});
+
+document.getElementById("btnCopyGuide").addEventListener("click", async ()=>{
+  const copyMsg = document.getElementById("copyGuideMsg");
+  try{
+    await navigator.clipboard.writeText(IMPORT_FORMAT_GUIDE);
+  }catch(e){
+    const ta = document.getElementById("guideText");
+    ta.focus(); ta.select();
+    document.execCommand("copy");
+  }
+  copyMsg.hidden = false;
+  clearTimeout(copyMsg._t);
+  copyMsg._t = setTimeout(()=>{ copyMsg.hidden = true; }, 2000);
+});
+
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  importArea.value = JSON.stringify(parts, null, 2);
+  importMsg.hidden = false;
+  importMsg.className = "import-msg ok";
+  importMsg.textContent = "Đã điền dữ liệu hiện có (định dạng JSON) vào ô bên trên — chọn tất cả và sao chép để lưu trữ ngoài.";
+});
+
+document.getElementById("btnParse").addEventListener("click", ()=>{
+  const text = importArea.value.trim();
+  if(!text){
+    importMsg.hidden = false; importMsg.className = "import-msg err";
+    importMsg.textContent = "Chưa có nội dung để phân tích.";
+    return;
+  }
+  try{
+    if(text.startsWith("[")){
+      const incoming = JSON.parse(text);
+      incoming.forEach(p=>{ p.id = Date.now()+Math.random(); parts.push(p); });
+      importMsg.className = "import-msg ok";
+      importMsg.textContent = "Đã nhập " + incoming.length + " bài từ JSON và lưu vào bộ nhớ trình duyệt.";
+    } else {
+      const newParts = parseImportText(text);
+      if(!newParts.length) throw new Error("Không tìm thấy bài nào đúng định dạng (cần bắt đầu bằng dòng \"BÀI n\").");
+      parts = parts.concat(newParts);
+      importMsg.className = "import-msg ok";
+      importMsg.textContent = "Đã phân tích và thêm " + newParts.length + " bài mới, lưu vào bộ nhớ trình duyệt.";
+    }
+    importMsg.hidden = false;
+    saveParts(parts);
+    renderSidebar();
+    currentIndex = parts.length - 1;
+    renderSidebar();
+    renderMain();
+  }catch(err){
+    importMsg.hidden = false; importMsg.className = "import-msg err";
+    importMsg.textContent = "Không phân tích được nội dung: " + err.message;
+  }
+});
+
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  if(!confirm("Khôi phục về 6 bài mặc định? Các bài đã nhập thêm sẽ bị xoá.")) return;
+  parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  saveParts(parts);
+  currentIndex = 0;
+  renderSidebar();
+  renderMain();
+});
+
+/* ============ Chọn nhiều bài để xoá (tick chọn) ============ */
+document.getElementById("btnSelectMode").addEventListener("click", ()=> setSelectMode(true));
+document.getElementById("btnBulkCancel").addEventListener("click", ()=> setSelectMode(false));
+
+document.getElementById("partList").addEventListener("change", (e)=>{
+  if(!e.target.classList.contains("part-check")) return;
+  const i = parseInt(e.target.getAttribute("data-index"), 10);
+  if(e.target.checked) selectedForDelete.add(i);
+  else selectedForDelete.delete(i);
+  updateBulkBar();
+});
+
+document.getElementById("btnBulkDelete").addEventListener("click", ()=>{
+  const n = selectedForDelete.size;
+  if(!n) return;
+  if(!confirm("Xoá " + n + " bài đã chọn? Không thể hoàn tác.")) return;
+  parts = parts.filter((_, i) => !selectedForDelete.has(i));
+  saveParts(parts);
+  if(currentIndex >= parts.length) currentIndex = Math.max(0, parts.length - 1);
+  setSelectMode(false);
+  renderMain();
+});
+
+/* ============ Init ============ */
+renderSidebar();
+renderMain();
+initCloudData();
+/* ============ Click / keyboard vào phần tô màu trong bài làm ============ */
+window.jumpToTarget = function(targetId){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  el.scrollIntoView({behavior:"smooth", block:"center"});
+  el.classList.remove("flash");
+  void el.offsetWidth;
+  el.classList.add("flash");
+  setTimeout(()=> el.classList.remove("flash"), 1300);
+};
+
+document.getElementById("content").addEventListener("click", (e)=>{
+  const hl = e.target.closest(".hl");
+  if(!hl) return;
+  window.jumpToTarget(hl.getAttribute("data-target"));
+});
+</script>
+</body>
+</html>
