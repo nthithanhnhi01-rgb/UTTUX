@@ -1322,19 +1322,19 @@ async function initCloudData() {
   try {
     const snapshot = await get(ref(db, DB_REF_PATH));
     if (snapshot.exists()) {
-      parts = snapshot.val();
-      normalizeDeepInPlace(parts);
+      categories = snapshot.val();
+      normalizeDeepInPlace(categories);
     } else {
-      // Nếu trên mây chưa có gì (lần chạy đầu), lấy mặc định đẩy lên
-      parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
-      window.saveParts(parts);
+      // Nếu trên mây chưa có gì, lấy mảng DEFAULT_PARTS các chủ đề đưa lên
+      categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+      window.saveCategories(categories);
     }
   } catch (error) {
     console.error("Lỗi khi tải dữ liệu, sử dụng mặc định:", error);
-    parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+    categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
   }
   
-  // Sau khi tải xong data, vẽ giao diện
+  // Vẽ lại giao diện sau khi tải xong
   renderSidebar();
   renderMain();
 }
