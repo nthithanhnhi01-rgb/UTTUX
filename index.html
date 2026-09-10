@@ -1322,10 +1322,17 @@ async function initCloudData() {
   try {
     const snapshot = await get(ref(db, DB_REF_PATH));
     if (snapshot.exists()) {
-      categories = snapshot.val();
+      const data = snapshot.val();
+      // Kiểm tra nếu dữ liệu cũ là mảng phẳng (parts), tự động bọc lại thành cấu trúc categories chuẩn
+      if (Array.isArray(data) && data.length > 0 && !data[0].category) {
+        categories = [{ category: "Mặc định", parts: data }];
+      } else if (Array.isArray(data)) {
+        categories = data;
+      } else {
+        categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+      }
       normalizeDeepInPlace(categories);
     } else {
-      // Nếu trên mây chưa có gì, lấy mảng DEFAULT_PARTS các chủ đề đưa lên
       categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
       window.saveCategories(categories);
     }
@@ -1334,11 +1341,9 @@ async function initCloudData() {
     categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
   }
   
-  // Vẽ lại giao diện sau khi tải xong
   renderSidebar();
   renderMain();
 }
-
 /* ============ Các hàm Render giao diện (Giữ nguyên của bạn) ============ */
 function errCount(p){ return (p.grammar ? p.grammar.length : 0) + (p.vocab ? p.vocab.length : 0); }
 
@@ -1346,14 +1351,23 @@ function renderSidebar(){
   const list = document.getElementById("partList");
   list.innerHTML = "";
   
+ // Đảm bảo categories luôn là mảng hợp lệ trước khi gọi forEach
+  if (!Array.isArray(categories)) {
+    categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  }
+
   categories.forEach((cat, catIdx) => {
-    // Tạo tiêu đề nhóm cha
+    // Kiểm tra nếu nhóm không có mảng parts thì khởi tạo mảng rỗng để tránh văng lỗi
+    if (!cat.parts || !Array.isArray(cat.parts)) {
+      cat.parts = [];
+    }
+
     const catHeader = document.createElement("div");
     catHeader.className = "cat-group-header";
-    catHeader.textContent = cat.category;
+    catHeader.style.cssText = "font-size:0.75rem; font-weight:700; color:var(--gold); padding:8px 4px 4px; text-transform:uppercase; letter-spacing:0.05em;";
+    catHeader.textContent = cat.category || "Chủ đề";
     list.appendChild(catHeader);
 
-    // Duyệt các bài con bên trong
     cat.parts.forEach((p, partIdx) => {
       const btn = document.createElement("button");
       const isActive = (catIdx === currentCatIndex && partIdx === currentPartIndex);
@@ -1366,7 +1380,6 @@ function renderSidebar(){
         inner += `<input type="checkbox" class="part-check" data-key="${uniqueKey}"` +
                  (selectedForDelete.has(uniqueKey) ? " checked" : "") + '>';
       }
-      // Số thứ tự bài con hiển thị linh hoạt theo vị trí mảng (bắt đầu từ 1)
       inner += `<span class="pi-title">Bài ${partIdx + 1}<small>${escapeHtml(p.topic||"")}</small></span>` +
                `<span class="pi-count">${errCount(p)}</span>`;
       
