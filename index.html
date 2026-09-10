@@ -785,17 +785,15 @@ const DEFAULT_PARTS = [
 }
 ];
 function parseImportText(text) {
-  // Chuẩn hóa ngắt dòng
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   const articles = [];
   let currentArt = null;
-  let mode = null; // 'prompt', 'answer', 'grammar', 'vocab', 'upgrades', 'samples'
+  let mode = null; 
   
   let i = 0;
   while (i < lines.length) {
     let line = lines[i].trim();
     
-    // Phát hiện bắt đầu bài mới: "BÀI 7" hoặc "Bài 7"
     if (/^BÀI\s+\d+/i.test(line)) {
       if (currentArt) {
         articles.push(currentArt);
@@ -820,7 +818,6 @@ function parseImportText(text) {
       continue;
     }
     
-    // Nhận diện các section chính
     if (/^1\.\s*Đề bài/i.test(line)) {
       mode = 'prompt';
       i++;
@@ -852,7 +849,6 @@ function parseImportText(text) {
       continue;
     }
     
-    // Xử lý dữ liệu theo từng mode
     if (mode === 'prompt') {
       if (line) {
         currentArt.prompt += (currentArt.prompt ? " " : "") + line.replace(/^[""]|[""]$/g, '');
@@ -862,29 +858,32 @@ function parseImportText(text) {
         currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^[""]|[""]$/g, '');
       }
     } else if (mode === 'grammar_vocab') {
-      // Đọc lỗi: dòng sai nằm trong ngoặc kép, theo sau là loại lỗi trong ngoặc đơn, dòng tiếp theo là Sửa thành
       if (line.startsWith('"') || line.startsWith('“')) {
         let wrongText = line.replace(/^[“"]|[”"]$/g, '');
-        // Kiểm tra xem có chứa loại lỗi không, ví dụ: "cụm" (ngữ pháp): giải thích
         let note = "";
         let fix = "";
-        let isGrammar = true;
+        let isGrammar = false; // Mặc định là từ vựng, trừ khi có từ khóa chỉ ngữ pháp
         
-        // Đọc tiếp các dòng kế tiếp để lấy note và fix
+        // Kiểm tra xem dòng đầu tiên có chứa phân loại lỗi trong ngoặc không (vd: (ngữ pháp), (cấu trúc))
+        let lowerLine = line.toLowerCase();
+        if (lowerLine.includes("ngữ pháp") || lowerLine.includes("cấu trúc") || lowerLine.includes("trật tự từ")) {
+          isGrammar = true;
+        }
+        
         i++;
         let currentBlockLines = [];
-        while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("Sửa thành:") && !lines[i].startsWith("b.") && !lines[i].startsWith("Bản dịch mẫu")) {
+        while (i < lines.length && lines[i].trim() !== "" && !lines[i].startsWith("Sửa thành:") && !lines[i].startsWith("b.") && !lines[i].startsWith("Bản dịch mẫu") && !lines[i].startsWith('"')) {
           currentBlockLines.push(lines[i].trim());
           i++;
         }
         note = currentBlockLines.join(" ");
         
-        // Kiểm tra từ khóa loại lỗi để phân nhóm ngữ pháp hay từ vựng
-        if (note.toLowerCase().includes("từ vựng") && !note.toLowerCase().includes("ngữ pháp") && !note.toLowerCase().includes("cấu trúc")) {
-          isGrammar = false;
+        // Kiểm tra thêm ở phần note
+        let lowerNote = note.toLowerCase();
+        if (lowerNote.includes("ngữ pháp") || lowerNote.includes("cấu trúc") || lowerNote.includes("trật tự từ") || lowerNote.includes("cấu trúc bị động")) {
+          isGrammar = true;
         }
         
-        // Đọc dòng "Sửa thành:"
         if (i < lines.length && lines[i].trim().startsWith("Sửa thành:")) {
           fix = lines[i].trim().replace(/^Sửa thành:\s*/, '');
           i++;
@@ -899,7 +898,6 @@ function parseImportText(text) {
         continue;
       }
     } else if (mode === 'upgrades') {
-      // Đọc phần nâng cấp có dạng: "cụm gốc" ➡️ cụm nâng cấp: ghi chú
       if (line.includes('➡️') || line.includes('->')) {
         let parts = line.split(/➡️|->/);
         let fromText = parts[0].trim().replace(/^[“"]|[”"]$/g, '');
@@ -913,13 +911,26 @@ function parseImportText(text) {
           to: toText,
           note: noteText
         });
+      } else if (line && i + 1 < lines.length && (lines[i+1].includes('➡️') || lines[i+1].includes('->'))) {
+        // Trường hợp tên thành ngữ và nội dung nâng cấp nằm lệch dòng
+        let fromText = line.replace(/^[“"]|[”"]$/g, '');
+        i++;
+        let nextLine = lines[i].trim();
+        let parts = nextLine.split(/➡️|->/);
+        let toText = parts[0].trim().replace(/^[“"]|[”"]$/g, '');
+        let noteText = parts.slice(1).join(':').trim();
+        
+        currentArt.upgrades.push({
+          from: fromText,
+          to: toText,
+          note: noteText
+        });
       }
     } else if (mode === 'samples') {
-      // Đọc bản dịch mẫu (nhãn + câu dịch trong ngoặc kép)
       if (line && !line.startsWith('"') && !line.startsWith('“')) {
         let label = line.replace(/:$/, '');
         i++;
-        while(i < lines.length && !lines[i].trim()) i++; // bỏ qua dòng trống
+        while(i < lines.length && !lines[i].trim()) i++;
         if(i < lines.length) {
           let textSample = lines[i].trim().replace(/^[“"]|[”"]$/g, '');
           currentArt.samples.push({
