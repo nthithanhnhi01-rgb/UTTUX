@@ -502,6 +502,7 @@
       padding:14px 16px;
     }
     .rail-head{display:none;}
+    .cat-group-header{display:none;} /* Ẩn tên chủ đề trên điện thoại cho gọn */
     .part-list{flex-direction:row; gap:8px;}
     .part-item{flex-direction:column; white-space:nowrap;}
     .rail-actions{flex-direction:row; margin:0 0 0 10px; padding:0 0 0 10px; border-top:none; border-left:1px solid var(--line);}
@@ -517,6 +518,9 @@
 </style>
 </head>
 <body>
+
+<!-- Danh sách gợi ý tên Chủ đề khi nhập/sửa dữ liệu -->
+<datalist id="categoryList"></datalist>
 
 <div class="app">
   <aside class="rail">
@@ -551,11 +555,7 @@
     </div>
     <p class="panel-hint">
       Dán nội dung bài luyện dịch theo đúng cấu trúc gốc — mỗi bài bắt đầu bằng dòng
-      "BÀI n", có "1. Đề bài", "2. Phần trả lời của tôi", "3. Phần feedback" với mục
-      a. (lỗi sai) và b. (nâng cấp), và tuỳ chọn thêm "4. Bản dịch mẫu" gồm 2 đoạn dịch
-      (mỗi đoạn có dòng nhãn riêng, ví dụ "Bản dịch sát nghĩa:" / "Bản dịch văn phong
-      mượt mà:", theo sau là câu dịch trong dấu ngoặc kép) — để thêm bài mới vào danh
-      sách. Dữ liệu được lưu trực tiếp vào bộ nhớ trình duyệt (localStorage), chỉ trên máy này.
+      "BÀI n", có "1. Đề bài", "2. Phần trả lời của tôi", "3. Phần feedback". Dữ liệu được lưu trực tiếp vào bộ nhớ trình duyệt, chỉ trên máy này.
     </p>
     <div class="guide-box">
       <button type="button" class="guide-toggle" id="btnToggleGuide" aria-expanded="false">📋 Xem hướng dẫn định dạng chi tiết (để đưa cho AI soạn bài)</button>
@@ -567,6 +567,13 @@
         </div>
       </div>
     </div>
+    
+    <!-- THÊM Ô CHỌN CHỦ ĐỀ VÀO ĐÂY -->
+    <div class="edit-field" style="margin-bottom:12px;">
+      <label for="importCategory" style="font-size: .85rem; color: var(--gold); display: block; margin-bottom: 4px;">Xếp vào Chủ đề lớn (Category):</label>
+      <input type="text" id="importCategory" list="categoryList" placeholder="Nhập tên chủ đề (VD: Kinh tế, Văn hoá...) hoặc chọn từ danh sách" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); font-family:inherit; font-size:.92rem;">
+    </div>
+
     <textarea id="importArea" rows="14" placeholder="Dán nội dung bài luyện dịch vào đây..."></textarea>
     <div class="panel-actions">
       <button id="btnExport">Xuất dữ liệu hiện có</button>
@@ -582,10 +589,16 @@
       <h2>Sửa bài</h2>
       <button id="btnCloseEditPanel" aria-label="Đóng">✕</button>
     </div>
-    <p class="panel-hint">Sửa trực tiếp nội dung bài, danh sách lỗi, nâng cấp từ vựng và bản dịch mẫu. Bấm "Lưu thay đổi" để ghi lại vào bộ nhớ trình duyệt.</p>
+    <p class="panel-hint">Sửa trực tiếp nội dung bài, danh sách lỗi, nâng cấp từ vựng và bản dịch mẫu. Bấm "Lưu thay đổi" để ghi lại.</p>
+
+    <!-- THÊM Ô CHỦ ĐỀ ĐỂ ĐỔI TÊN/CHUYỂN NHÀ BÀI VIẾT -->
+    <div class="edit-field">
+      <label for="editCategory">Chủ đề lớn (Category)</label>
+      <input type="text" id="editCategory" list="categoryList" placeholder="Tên chủ đề mẹ">
+    </div>
 
     <div class="edit-field">
-      <label for="editTopic">Chủ đề</label>
+      <label for="editTopic">Tiêu đề bài</label>
       <input type="text" id="editTopic">
     </div>
     <div class="edit-field">
@@ -634,7 +647,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 
-/* ============ Dữ liệu mặc định (6 bài từ tài liệu gốc) ============ */
+/* ============ Dữ liệu mặc định ============ */
 const DEFAULT_PARTS = [
   {
     category: "Môi trường & Xã hội",
@@ -936,7 +949,6 @@ const db = getDatabase(app);
 const DB_REF_PATH = "hsk_translate_data";
 
 /* ============ Khởi tạo các biến Toàn Cục ============ */
-// KHỞI TẠO LUÔN DỮ LIỆU ĐỂ WEB KHÔNG BỊ TRẮNG TRONG LÚC CHỜ FIREBASE
 let categories = JSON.parse(JSON.stringify(DEFAULT_PARTS)); 
 let currentCatIndex = 0;
 let currentPartIndex = 0;
@@ -954,7 +966,6 @@ function normalizeDeepInPlace(obj){
   }
 }
 
-// Lưu Firebase theo định dạng Categories
 window.saveCategories = function(dataToSave) {
   normalizeDeepInPlace(dataToSave);
   try {
@@ -987,8 +998,6 @@ async function initCloudData() {
     console.error("Lỗi tải Firebase, dùng dữ liệu gốc:", error);
     categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
   }
-  
-  // Update UI sau khi Firebase trả về kết quả
   renderSidebar();
   renderMain();
 }
@@ -1001,6 +1010,12 @@ function renderSidebar(){
   
   if (!Array.isArray(categories) || categories.length === 0) {
     categories = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  }
+  
+  // Cập nhật Datalist cho các ô Input gợi ý Chủ đề
+  const dl = document.getElementById("categoryList");
+  if(dl) {
+    dl.innerHTML = categories.map(c => `<option value="${escapeHtml(c.category)}">`).join("");
   }
 
   categories.forEach((cat, catIdx) => {
@@ -1195,7 +1210,6 @@ function renderMain(){
   document.getElementById("content").innerHTML = html;
 }
   
-
 /* ============ Sửa dữ liệu hiện có (edit panel) ============ */
 const GRAMMAR_FIELDS = [
   {key:"wrong", label:"Chỗ sai (chữ Hán / cấu trúc)", type:"text"},
@@ -1254,6 +1268,8 @@ function openEditPanel(){
   const p = cat.parts[currentPartIndex];
   if(!p) return;
   
+  // Nạp dữ liệu vào bảng sửa bài
+  document.getElementById("editCategory").value = cat.category || "";
   document.getElementById("editTopic").value = p.topic || "";
   document.getElementById("editPrompt").value = p.prompt || "";
   document.getElementById("editAnswer").value = p.answer || "";
@@ -1289,6 +1305,7 @@ editOverlay.addEventListener("click", (e)=>{
 });
 
 document.getElementById("btnEditSave").addEventListener("click", ()=>{
+  const newCatName = document.getElementById("editCategory").value.trim() || "Chưa phân loại";
   const topic = document.getElementById("editTopic").value.trim();
   const prompt = document.getElementById("editPrompt").value.trim();
   const answer = document.getElementById("editAnswer").value.trim();
@@ -1305,11 +1322,39 @@ document.getElementById("btnEditSave").addEventListener("click", ()=>{
   const upgrades = collectRows("editUpgradeList", UPGRADE_FIELDS);
   const samples  = collectRows("editSampleList", SAMPLE_FIELDS);
 
-  const existing = categories[currentCatIndex].parts[currentPartIndex] || {};
-  categories[currentCatIndex].parts[currentPartIndex] = {
-    id: existing.id !== undefined ? existing.id : (Date.now() + Math.random()),
+  const existingPart = categories[currentCatIndex].parts[currentPartIndex] || {};
+  const updatedPart = {
+    id: existingPart.id !== undefined ? existingPart.id : (Date.now() + Math.random()),
     topic, prompt, answer, grammar, vocab, upgrades, samples
   };
+  
+  const oldCatName = categories[currentCatIndex].category;
+
+  if (newCatName !== oldCatName) {
+    // Đã đổi chủ đề -> Xoá bài ở chủ đề cũ
+    categories[currentCatIndex].parts.splice(currentPartIndex, 1);
+    
+    // Tìm xem chủ đề mới đã có chưa
+    let targetCatIdx = categories.findIndex(c => c.category === newCatName);
+    if(targetCatIdx === -1) {
+      // Nếu chưa có, tạo chủ đề mới tinh
+      categories.push({ category: newCatName, parts: [] });
+      targetCatIdx = categories.length - 1;
+    }
+    
+    // Đẩy bài vào chủ đề mới
+    categories[targetCatIdx].parts.push(updatedPart);
+    
+    // Cập nhật lại con trỏ màn hình
+    currentCatIndex = targetCatIdx;
+    currentPartIndex = categories[targetCatIdx].parts.length - 1;
+    
+    // Dọn dẹp chủ đề cũ nếu lỡ xoá hết bài trong đó
+    categories = categories.filter(c => c.parts.length > 0);
+  } else {
+    // Không đổi chủ đề, chỉ cập nhật bài
+    categories[currentCatIndex].parts[currentPartIndex] = updatedPart;
+  }
   
   window.saveCategories(categories);
   closeEditPanel();
@@ -1317,7 +1362,6 @@ document.getElementById("btnEditSave").addEventListener("click", ()=>{
   renderMain();
 });
 
-// Fix lỗi undefined variable currentIndex 
 document.getElementById("content").addEventListener("click", (e)=>{
   if(e.target.closest("#btnEditPart")) openEditPanel();
 });
@@ -1329,14 +1373,81 @@ const importMsg = document.getElementById("importMsg");
 
 document.getElementById("btnImport").addEventListener("click", ()=>{
   importMsg.hidden = true;
+  document.getElementById("importCategory").value = ""; // Xoá trắng ô nhập
   overlay.hidden = false;
   importArea.focus();
 });
 document.getElementById("btnClosePanel").addEventListener("click", ()=> overlay.hidden = true);
 overlay.addEventListener("click", (e)=>{ if(e.target === overlay) overlay.hidden = true; });
 
-const IMPORT_FORMAT_GUIDE = "HƯỚNG DẪN ĐỊNH DẠNG..."; // Đã rút gọn để tối ưu bộ nhớ
-document.getElementById("guideText").value = "HƯỚNG DẪN ĐỊNH DẠNG\n(Theo như bản cũ của bạn)";
+// KHÔI PHỤC BẢN HƯỚNG DẪN GỐC
+const IMPORT_FORMAT_GUIDE = [
+"HƯỚNG DẪN ĐỊNH DẠNG BÀI LUYỆN DỊCH (Việt → Trung, HSK 6)",
+"Hãy soạn bài theo ĐÚNG cấu trúc dưới đây, vì nội dung sẽ được dán vào một",
+"công cụ tự động tách dữ liệu theo mẫu cố định. Sai một ký tự nhỏ (dấu ngoặc kép,",
+"dấu hai chấm, dòng trống...) có thể khiến công cụ đọc sai hoặc bỏ sót.",
+"",
+"QUY TẮC CHUNG",
+"- Mỗi bài bắt đầu bằng một dòng riêng: BÀI n (n là số thứ tự, ví dụ: BÀI 7).",
+"- Nếu soạn nhiều bài trong cùng một lần, chỉ cần mỗi bài bắt đầu bằng dòng",
+"  \"BÀI n\" mới là được, không cần thêm ký hiệu phân cách nào khác.",
+"- Chỉ dùng dấu ngoặc kép thẳng \" \" (không dùng ngoặc kép cong “ ” hay dấu '').",
+"- Chỉ dùng đúng ký hiệu mũi tên ➡️ ở mục nâng cấp (không thay bằng ->, →, hay chữ).",
+"",
+"CẤU TRÚC MỘT BÀI",
+"",
+"BÀI n",
+"1. Đề bài",
+"\"Câu đề bài tiếng Việt cần dịch sang tiếng Trung.\"",
+"",
+"2. Phần trả lời của tôi",
+"\"Câu bài làm tiếng Trung của người học.\"",
+"",
+"3. Phần feedback",
+"",
+"a. Phần dùng sai",
+"\"cụm/câu bị sai\" (loại lỗi): ghi chú giải thích vì sao sai.",
+"Sửa thành: cụm/câu đã sửa đúng",
+"",
+"\"cụm/câu bị sai khác\" (loại lỗi khác): ghi chú giải thích.",
+"Sửa thành: cụm đã sửa",
+"",
+"b. Phần có thể cải thiện",
+"\"cụm gốc\" ➡️ cụm nâng cấp hơn: ghi chú giải thích vì sao nâng cấp hay hơn.",
+"",
+"Bản dịch mẫu",
+"",
+"Bản dịch sát nghĩa:",
+"",
+"\"Bản dịch bám sát nghĩa từng chữ của đề bài.\"",
+"",
+"Bản dịch văn phong mượt mà:",
+"",
+"\"Bản dịch tự nhiên, văn phong hay hơn.\"",
+"",
+"LƯU Ý QUAN TRỌNG KHI SOẠN (bắt buộc tuân thủ)",
+"1) Dòng \"Sửa thành:\" phải nằm NGAY DÒNG KẾ TIẾP của câu ghi chú — KHÔNG được",
+"   để dòng trống giữa ghi chú và \"Sửa thành:\". Nếu có dòng trống ở giữa, phần",
+"   sửa sẽ bị tách rời và bị mất khỏi bài.",
+"2) Giữa các mục lỗi khác nhau trong mục a., và giữa các mục nâng cấp khác nhau",
+"   trong mục b., PHẢI cách nhau đúng 1 dòng trống.",
+"3) Loại lỗi ghi trong dấu ngoặc đơn ở mục a. quyết định lỗi đó xếp vào nhóm",
+"   \"lỗi ngữ pháp\" hay \"lỗi từ vựng\":",
+"   - Ghi một trong các từ: \"ngữ pháp\", \"cấu trúc\", \"từ loại\", \"đại từ\",",
+"     \"mệnh đề\" → xếp vào nhóm LỖI NGỮ PHÁP.",
+"   - Ghi nhãn khác (ví dụ \"từ vựng\") → xếp vào nhóm LỖI TỪ VỰNG.",
+"4) Mục \"Bản dịch mẫu\" là TUỲ CHỌN (có thể bỏ qua). Nếu có thì viết đúng như",
+"   mẫu ở trên: viết riêng dòng tiêu đề \"Bản dịch mẫu\" (không cần đánh số 4.,",
+"   không viết dính liền chữ khác); mỗi bản dịch gồm 1 dòng nhãn ngắn gọn",
+"   (dưới 80 ký tự, không chứa dấu ngoặc kép) và 1 dòng câu dịch trong ngoặc",
+"   kép, HAI DÒNG NÀY PHẢI CÁCH NHAU 1 DÒNG TRỐNG. Các bản dịch với nhau",
+"   cũng cách nhau 1 dòng trống.",
+"5) Có thể có nhiều hơn 1 lỗi ở mục a. và nhiều hơn 1 mục nâng cấp ở mục b.,",
+"   cứ thêm khối tương ứng, cách nhau 1 dòng trống theo đúng quy tắc (2).",
+"6) Không thêm chữ hay ký hiệu nào khác ngoài cấu trúc trên (không thêm gạch",
+"   đầu dòng, không đánh số phụ, không thêm ghi chú ngoài lề)."
+].join("\n");
+document.getElementById("guideText").value = IMPORT_FORMAT_GUIDE;
 
 const btnToggleGuide = document.getElementById("btnToggleGuide");
 const guideContent = document.getElementById("guideContent");
@@ -1344,6 +1455,19 @@ btnToggleGuide.addEventListener("click", ()=>{
   const show = guideContent.hidden;
   guideContent.hidden = !show;
   btnToggleGuide.setAttribute("aria-expanded", String(show));
+});
+document.getElementById("btnCopyGuide").addEventListener("click", async ()=>{
+  const copyMsg = document.getElementById("copyGuideMsg");
+  try{
+    await navigator.clipboard.writeText(IMPORT_FORMAT_GUIDE);
+  }catch(e){
+    const ta = document.getElementById("guideText");
+    ta.focus(); ta.select();
+    document.execCommand("copy");
+  }
+  copyMsg.hidden = false;
+  clearTimeout(copyMsg._t);
+  copyMsg._t = setTimeout(()=>{ copyMsg.hidden = true; }, 2000);
 });
 
 document.getElementById("btnExport").addEventListener("click", ()=>{
@@ -1353,6 +1477,7 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
 });
 
 document.getElementById("btnParse").addEventListener("click", ()=>{
+  const targetCatName = document.getElementById("importCategory").value.trim() || "Mới Nhập";
   const text = importArea.value.trim();
   if(!text){
     importMsg.hidden = false; importMsg.className = "import-msg err";
@@ -1363,8 +1488,13 @@ document.getElementById("btnParse").addEventListener("click", ()=>{
     if(text.startsWith("[")){
       const incoming = JSON.parse(text);
       if(incoming.length > 0 && !incoming[0].category) {
-        if(!categories[0]) categories.push({category: "Mới Nhập", parts: []});
-        incoming.forEach(p => { p.id = Date.now()+Math.random(); categories[0].parts.push(p); });
+        // Fix JSON mảng phẳng (không có chủ đề)
+        let targetCat = categories.find(c => c.category === targetCatName);
+        if(!targetCat) {
+          targetCat = {category: targetCatName, parts: []};
+          categories.unshift(targetCat);
+        }
+        incoming.forEach(p => { p.id = Date.now()+Math.random(); targetCat.parts.push(p); });
       } else {
          categories = categories.concat(incoming);
       }
@@ -1374,11 +1504,11 @@ document.getElementById("btnParse").addEventListener("click", ()=>{
       const newParts = parseImportText(text);
       if(!newParts.length) throw new Error("Không tìm thấy bài nào đúng định dạng.");
       
-      // Mặc định lưu bài mới vào thư mục "Mới nhập" (nếu chưa có thì tạo)
-      let targetCat = categories.find(c => c.category === "Mới Nhập");
+      // Tìm xem chủ đề bạn gõ đã tồn tại chưa
+      let targetCat = categories.find(c => c.category === targetCatName);
       if(!targetCat) {
-          targetCat = {category: "Mới Nhập", parts: []};
-          categories.unshift(targetCat); 
+          targetCat = {category: targetCatName, parts: []};
+          categories.push(targetCat); 
       }
       targetCat.parts = targetCat.parts.concat(newParts);
       
@@ -1442,10 +1572,8 @@ document.getElementById("btnBulkDelete").addEventListener("click", ()=>{
 });
 
 /* ============ Init ============ */
-// Bật render hiển thị luôn dữ liệu có sẵn để không bị trắng
 renderSidebar();
 renderMain();
-// Gọi API Firebase ngầm, nếu tải được Firebase nó sẽ tự động Replace giao diện
 initCloudData();
 
 window.jumpToTarget = function(targetId){
