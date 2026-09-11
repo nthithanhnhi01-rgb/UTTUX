@@ -176,18 +176,38 @@
     padding-bottom:6px;
     border-bottom:1px solid var(--line);
   }
-  .prompt-block{
-    border-left:3px solid var(--red);
-    padding:16px 44px 16px 41px;
-    position:sticky;
-    top:0;
-    z-index:8;
-    background:var(--paper);
-    box-shadow:0 8px 14px -10px rgba(42,35,24,.35);
-    margin:0 -44px 30px;
+  /* Bố cục chia đôi */
+  .split-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 34px;
   }
-  .prompt-block h3{margin-top:0;}
-  .prompt-block p{margin:0; font-size:1.02rem;}
+  .split-left {
+    flex: 0 0 35%;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .split-right {
+    flex: 1;
+    min-width: 0;
+  }
+  .prompt-block {
+    border-left: 3px solid var(--red);
+    padding: 16px 20px 16px 18px;
+    background: var(--paper);
+    box-shadow: 0 4px 12px -8px rgba(42,35,24,.4);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    margin: 0; 
+  }
+  .prompt-block h3 { margin-top: 0; }
+  .prompt-block p { margin: 0; font-size: 1.02rem; }
+  .split-left::-webkit-scrollbar { width: 4px; }
+  .split-left::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  /* BẠN GIỮ NGUYÊN DÒNG ANSWER-BLOCK NÀY NHÉ */
   .answer-block{
     border-left:3px solid var(--ink-soft);
     padding:2px 0 2px 16px;
@@ -508,12 +528,14 @@
     .rail-actions{flex-direction:row; margin:0 0 0 10px; padding:0 0 0 10px; border-top:none; border-left:1px solid var(--line);}
     .bulk-actions{flex-direction:row; align-items:center; margin:0 0 0 10px; padding:0 0 0 10px; border-top:none; border-left:1px solid var(--line);}
     .content{padding:28px 18px 60px;}
-    .prompt-block{margin:0 -18px 24px; padding:14px 18px 14px 15px;}
+    .split-layout { flex-direction: column; gap: 24px; }
+    .split-left { flex: none; width: 100%; position: relative; top: 0; max-height: none; }
     .errors-grid{grid-template-columns:1fr;}
     .part-head{flex-direction:column; align-items:flex-start;}
   }
   @media (prefers-reduced-motion:reduce){
     *{transition:none !important;}
+  
   }
 </style>
 </head>
@@ -1159,16 +1181,7 @@ function errItemHtml(item, id){
     '</div>';
 }
 
-function renderMain(){
-  const cat = categories[currentCatIndex];
-  const p = cat && cat.parts ? cat.parts[currentPartIndex] : null;
-  
-  if(!p){ 
-    document.getElementById("content").innerHTML = "<p style='text-align:center; margin-top:40px;'>Chưa có bài học nào trong mục này.</p>"; 
-    return; 
-  }
-  
-  const html = `
+const html = `
     <header class="part-head">
       <div>
         <small style="color:var(--gold); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(cat.category)}</small>
@@ -1177,48 +1190,56 @@ function renderMain(){
       <button type="button" class="btn-edit-part" id="btnEditPart">✎ Sửa bài này</button>
     </header>
 
-    <section class="block prompt-block">
-      <h3>Đề bài</h3>
-      <p class="vi">${escapeHtml(p.prompt)}</p>
-    </section>
-
-    <section class="block answer-block">
-      <h3>Bài làm của tôi</h3>
-      <p class="zh">${buildAnswerHtml(p)}</p>
-    </section>
-
-    <section class="errors-grid">
-      <div class="err-col err-grammar">
-        <h3>Sai ngữ pháp <span class="count">${p.grammar ? p.grammar.length : 0}</span></h3>
-        ${p.grammar && p.grammar.length ? p.grammar.map((it,i)=>errItemHtml(it,"err-g-"+i)).join("") : '<p class="empty-note">Không có lỗi ngữ pháp được ghi nhận.</p>'}
+    <div class="split-layout">
+      <!-- ================= CỘT TRÁI: ĐỀ BÀI ================= -->
+      <div class="split-left">
+        <section class="block prompt-block">
+          <h3>Đề bài</h3>
+          <p class="vi">${escapeHtml(p.prompt)}</p>
+        </section>
       </div>
-      <div class="err-col err-vocab">
-        <h3>Sai từ vựng / dùng từ <span class="count">${p.vocab ? p.vocab.length : 0}</span></h3>
-        ${p.vocab && p.vocab.length ? p.vocab.map((it,i)=>errItemHtml(it,"err-v-"+i)).join("") : '<p class="empty-note">Không có lỗi dùng từ được ghi nhận.</p>'}
+
+      <!-- ================= CỘT PHẢI: BÀI LÀM VÀ CHỮA LỖI ================= -->
+      <div class="split-right">
+        <section class="block answer-block">
+          <h3>Bài làm của tôi</h3>
+          <p class="zh">${buildAnswerHtml(p)}</p>
+        </section>
+
+        <section class="errors-grid">
+          <div class="err-col err-grammar">
+            <h3>Sai ngữ pháp <span class="count">${p.grammar ? p.grammar.length : 0}</span></h3>
+            ${p.grammar && p.grammar.length ? p.grammar.map((it,i)=>errItemHtml(it,"err-g-"+i)).join("") : '<p class="empty-note">Không có lỗi ngữ pháp được ghi nhận.</p>'}
+          </div>
+          <div class="err-col err-vocab">
+            <h3>Sai từ vựng / dùng từ <span class="count">${p.vocab ? p.vocab.length : 0}</span></h3>
+            ${p.vocab && p.vocab.length ? p.vocab.map((it,i)=>errItemHtml(it,"err-v-"+i)).join("") : '<p class="empty-note">Không có lỗi dùng từ được ghi nhận.</p>'}
+          </div>
+        </section>
+
+        ${p.upgrades && p.upgrades.length ? `
+        <section class="block upgrade-block">
+          <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
+          ${p.upgrades.map((u,i) => `
+            <div class="upgrade-item" id="upg-${i}">
+              <span class="zh from">${escapeHtml(u.from)}</span><span class="arrow">→</span><span class="zh to">${escapeHtml(u.to)}</span>
+              ${u.note ? '<p class="note">'+escapeHtml(u.note)+'</p>' : ''}
+            </div>
+          `).join("")}
+        </section>` : ""}
+
+        ${p.samples && p.samples.length ? `
+        <section class="block sample-block">
+          <h3><span class="seal zh">校</span>Bản dịch mẫu</h3>
+          ${p.samples.map(s => `
+            <div class="sample-item">
+              <p class="sample-label">${escapeHtml(s.label)}</p>
+              <p class="zh sample-text">${escapeHtml(s.text)}</p>
+            </div>
+          `).join("")}
+        </section>` : ""}
       </div>
-    </section>
-
-    ${p.upgrades && p.upgrades.length ? `
-    <section class="block upgrade-block">
-      <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
-      ${p.upgrades.map((u,i) => `
-        <div class="upgrade-item" id="upg-${i}">
-          <span class="zh from">${escapeHtml(u.from)}</span><span class="arrow">→</span><span class="zh to">${escapeHtml(u.to)}</span>
-          ${u.note ? '<p class="note">'+escapeHtml(u.note)+'</p>' : ''}
-        </div>
-      `).join("")}
-    </section>` : ""}
-
-    ${p.samples && p.samples.length ? `
-    <section class="block sample-block">
-      <h3><span class="seal zh">校</span>Bản dịch mẫu</h3>
-      ${p.samples.map(s => `
-        <div class="sample-item">
-          <p class="sample-label">${escapeHtml(s.label)}</p>
-          <p class="zh sample-text">${escapeHtml(s.text)}</p>
-        </div>
-      `).join("")}
-    </section>` : ""}
+    </div>
   `;
   document.getElementById("content").innerHTML = html;
 }
