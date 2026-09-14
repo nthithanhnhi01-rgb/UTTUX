@@ -1181,7 +1181,25 @@ function errItemHtml(item, id){
     '</div>';
 }
 
-const html = `
+function renderMain() {
+  const contentEl = document.getElementById("content");
+  
+  // Kiểm tra xem có dữ liệu không
+  if (!categories || categories.length === 0 || !categories[currentCatIndex]) {
+    contentEl.innerHTML = "<p style='padding: 20px;'>Chưa có dữ liệu. Vui lòng nhập dữ liệu.</p>";
+    return;
+  }
+  
+  const cat = categories[currentCatIndex];
+  const p = cat.parts[currentPartIndex];
+  
+  // Nếu chủ đề này không có bài nào
+  if (!p) {
+    contentEl.innerHTML = "<p style='padding: 20px;'>Chủ đề này chưa có bài luyện dịch nào.</p>";
+    return;
+  }
+
+  const html = `
     <header class="part-head">
       <div>
         <small style="color:var(--gold); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${escapeHtml(cat.category)}</small>
@@ -1241,7 +1259,8 @@ const html = `
       </div>
     </div>
   `;
-  document.getElementById("content").innerHTML = html;
+  contentEl.innerHTML = html;
+}
 
   
 /* ============ Sửa dữ liệu hiện có (edit panel) ============ */
