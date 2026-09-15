@@ -205,7 +205,16 @@
     margin: 0; 
   }
   .prompt-block h3 { margin-top: 0; }
-  .prompt-block p { margin: 0; font-size: 1.02rem; }
+  .prompt-block p { 
+    margin: 0; 
+    font-size: 1.02rem; 
+    white-space: pre-wrap; /* Lệnh thần thánh giúp giữ nguyên dấu Enter/xuống dòng */
+    line-height: 1.7; 
+  }
+  
+  /* Thêm CSS cho phần highlight tùy chọn */
+  .hl-custom-text { color: var(--red); font-weight: 700; }
+  .hl-custom-bg { background: #FBF0D6; color: var(--ink); padding: 2px 4px; border-radius: 3px; font-weight: 500;}
   .split-left::-webkit-scrollbar { width: 4px; }
   .split-left::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 
@@ -885,7 +894,8 @@ function parseImportText(text) {
     if (/^Bản dịch mẫu/i.test(line)) { mode = 'samples'; i++; continue; }
     
     if (mode === 'prompt') {
-      if (line) currentArt.prompt += (currentArt.prompt ? " " : "") + line.replace(/^["“]|["”]$/g, '');
+      // Dùng \n để nối các dòng thay vì dùng khoảng trắng
+      currentArt.prompt += (currentArt.prompt ? "\n" : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'answer') {
       if (line) currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'grammar_vocab') {
@@ -1182,7 +1192,18 @@ function errItemHtml(item, id){
     (item.fix ? '<p class="fix"><span class="fix-arrow">→</span> ' + highlightZh(escapeHtml(item.fix)) + '</p>' : '') +
     '</div>';
 }
-
+// Hàm chuyển đổi các ký tự đặc biệt thành highlight
+function formatPromptText(text) {
+  if (!text) return "";
+  // Bước 1: Vẫn phải escapeHtml để chống lỗi code
+  let safeText = escapeHtml(text);
+  // Bước 2: Đổi cú pháp **chữ** thành đổi màu đỏ
+  safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<span class="hl-custom-text">$1</span>');
+  // Bước 3: Đổi cú pháp ==chữ== thành bôi nền vàng
+  safeText = safeText.replace(/==(.*?)==/g, '<span class="hl-custom-bg">$1</span>');
+  
+  return safeText;
+}
 function renderMain() {
   const contentEl = document.getElementById("content");
   
@@ -1215,7 +1236,7 @@ function renderMain() {
       <div class="split-left">
         <section class="block prompt-block">
           <h3>Đề bài</h3>
-          <p class="vi">${escapeHtml(p.prompt)}</p>
+          <p class="vi">${formatPromptText(p.prompt)}</p>
         </section>
       </div>
 
