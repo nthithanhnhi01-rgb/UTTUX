@@ -223,7 +223,12 @@
     border-left:3px solid var(--ink-soft);
     padding:2px 0 2px 16px;
   }
-  .answer-block p{margin:0; font-size:1.05rem;}
+  .answer-block p{
+    margin:0; 
+    font-size:1.05rem; 
+    white-space: pre-wrap; 
+    line-height: 1.7;
+  }
   .hl{
     cursor:pointer;
     border-bottom:2px solid currentColor;
@@ -322,7 +327,12 @@
     font-size:.78rem;
     color:var(--ink-soft);
   }
-  .sample-item .sample-text{margin:0; font-size:1.05rem;}
+  .sample-item .sample-text{
+    margin:0; 
+    font-size:1.05rem; 
+    white-space: pre-wrap; 
+    line-height:1.7;
+  }
 
   /* import overlay */
   .overlay{
@@ -624,6 +634,15 @@
     </div>
     <p class="panel-hint">Sửa trực tiếp nội dung bài, danh sách lỗi, nâng cấp từ vựng và bản dịch mẫu. Bấm "Lưu thay đổi" để ghi lại.</p>
 
+    <!-- TÍNH NĂNG MỚI: GHI ĐÈ DỮ LIỆU -->
+    <div class="edit-section" style="margin-top: 0; padding-top: 0; border-top: none; background: #eef7f2; padding: 14px; border-radius: var(--radius); border: 1px dashed var(--green);">
+      <h3 style="color: var(--green); margin-bottom: 8px;">🔄 Cập nhật/Ghi đè bằng data mới (Giữ nguyên Đề bài & Dịch mẫu)</h3>
+      <p style="font-size: 0.82rem; margin: 0 0 10px; color: var(--ink-soft);">Dán nguyên văn phản hồi mới của AI (từ phần "2. Phần trả lời..." đến hết "b. Nâng cấp") vào đây để tự động điền thay thế các trường bên dưới.</p>
+      <textarea id="editOverwriteArea" rows="4" placeholder="Dán nội dung mới vào đây..." style="width:100%; font-family:inherit; font-size:.92rem; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); resize:vertical;"></textarea>
+      <button type="button" id="btnEditOverwrite" class="btn-add-row" style="margin-top: 8px; border-color: var(--green); color: var(--green);">Tiến hành ghi đè</button>
+      <p id="overwriteMsg" class="import-msg" hidden></p>
+    </div>
+    
     <!-- THÊM Ô CHỦ ĐỀ ĐỂ ĐỔI TÊN/CHUYỂN NHÀ BÀI VIẾT -->
     <div class="edit-field">
       <label for="editCategory">Chủ đề lớn (Category)</label>
@@ -897,7 +916,7 @@ function parseImportText(text) {
       // Dùng \n để nối các dòng thay vì dùng khoảng trắng
       currentArt.prompt += (currentArt.prompt ? "\n" : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'answer') {
-      if (line) currentArt.answer += (currentArt.answer ? " " : "") + line.replace(/^["“]|["”]$/g, '');
+      if (line) currentArt.answer += (currentArt.answer ? "\n" : "") + line.replace(/^["“]|["”]$/g, '');
     } else if (mode === 'grammar_vocab') {
       // ĐÃ SỬA LỖI TẠI ĐÂY: Dùng Regex để tách riêng phần trong ngoặc và ngoài ngoặc
       if (line.startsWith('"') || line.startsWith('“')) {
@@ -966,8 +985,15 @@ function parseImportText(text) {
         i++;
         while(i < lines.length && !lines[i].trim()) i++;
         if(i < lines.length) {
+          // Cho phép gộp dòng của bản dịch mẫu nếu xuống dòng
           let textSample = lines[i].trim().replace(/^[“"]|[”"]$/g, '');
+          i++;
+          while(i < lines.length && lines[i].trim() && !lines[i].startsWith("Bản dịch")) {
+             textSample += "\n" + lines[i].trim().replace(/^[“"]|[”"]$/g, '');
+             i++;
+          }
           currentArt.samples.push({ label: label, text: textSample });
+          continue;
         }
       }
     }
@@ -1204,6 +1230,15 @@ function formatPromptText(text) {
   
   return safeText;
 }
+  
+  function applyBoldAndHighlight(escapedStr) {
+  if (!escapedStr) return "";
+  let s = escapedStr;
+  s = s.replace(/\*\*(.*?)\*\*/g, '<span class="hl-custom-text">$1</span>');
+  s = s.replace(/==(.*?)==/g, '<span class="hl-custom-bg">$1</span>');
+  return s;
+}
+  
 function renderMain() {
   const contentEl = document.getElementById("content");
   
@@ -1244,7 +1279,7 @@ function renderMain() {
       <div class="split-right">
         <section class="block answer-block">
           <h3>Bài làm của tôi</h3>
-          <p class="zh">${buildAnswerHtml(p)}</p>
+          <p class="zh">${applyBoldAndHighlight(buildAnswerHtml(p))}</p>
         </section>
 
         <section class="errors-grid">
@@ -1275,7 +1310,7 @@ function renderMain() {
           ${p.samples.map(s => `
             <div class="sample-item">
               <p class="sample-label">${escapeHtml(s.label)}</p>
-              <p class="zh sample-text">${escapeHtml(s.text)}</p>
+              <p class="zh sample-text">${applyBoldAndHighlight(escapeHtml(s.text))}</p>
             </div>
           `).join("")}
         </section>` : ""}
@@ -1343,6 +1378,12 @@ function openEditPanel(){
   if(!cat) return;
   const p = cat.parts[currentPartIndex];
   if(!p) return;
+
+  // Clear overwrite message & input
+  const overMsg = document.getElementById("overwriteMsg");
+  if (overMsg) overMsg.hidden = true;
+  const overArea = document.getElementById("editOverwriteArea");
+  if (overArea) overArea.value = "";
   
   // Nạp dữ liệu vào bảng sửa bài
   document.getElementById("editCategory").value = cat.category || "";
@@ -1380,6 +1421,50 @@ editOverlay.addEventListener("click", (e)=>{
   btn.closest(".edit-row").remove();
 });
 
+  // NÚT MỚI: Tiến hành GHI ĐÈ dữ liệu (Override)
+document.getElementById("btnEditOverwrite").addEventListener("click", () => {
+  const text = document.getElementById("editOverwriteArea").value.trim();
+  const msg = document.getElementById("overwriteMsg");
+  if (!text) {
+    msg.textContent = "Vui lòng dán nội dung mới vào khung trên trước.";
+    msg.className = "import-msg err"; msg.hidden = false;
+    return;
+  }
+  
+  try {
+    // Trick: Thêm một header giả để tool có thể nhận diện nếu user chỉ copy từ phần 2 trở đi
+    let dummyText = text;
+    if (!dummyText.match(/^BÀI\s+\d+/i)) {
+      dummyText = "BÀI 999\n1. Đề bài\ndummy\n" + dummyText;
+    }
+
+    const parsed = parseImportText(dummyText);
+    if (!parsed || parsed.length === 0) throw new Error("Định dạng chưa đúng, không nhận diện được dữ liệu.");
+
+    const newData = parsed[0];
+
+    // 1. Chỉ cập nhật Answer nếu có
+    if (newData.answer) {
+      document.getElementById("editAnswer").value = newData.answer;
+    }
+
+    // 2. Clear và điền lại danh sách lỗi & nâng cấp (KHÔNG chạm vào Prompt và Samples)
+    ["editGrammarList","editVocabList","editUpgradeList"].forEach(id => {
+      document.getElementById(id).innerHTML = "";
+    });
+    (newData.grammar||[]).forEach(item => addEditRow("editGrammarList", GRAMMAR_FIELDS, item));
+    (newData.vocab||[]).forEach(item => addEditRow("editVocabList", VOCAB_FIELDS, item));
+    (newData.upgrades||[]).forEach(item => addEditRow("editUpgradeList", UPGRADE_FIELDS, item));
+
+    msg.textContent = "Đã cập nhật dữ liệu thành công! (Phần Đề bài và Dịch mẫu được giữ nguyên)";
+    msg.className = "import-msg ok"; msg.hidden = false;
+    document.getElementById("editOverwriteArea").value = ""; 
+  } catch (e) {
+    msg.textContent = "Lỗi: " + e.message;
+    msg.className = "import-msg err"; msg.hidden = false;
+  }
+});
+  
 document.getElementById("btnEditSave").addEventListener("click", ()=>{
   const newCatName = document.getElementById("editCategory").value.trim() || "Chưa phân loại";
   const topic = document.getElementById("editTopic").value.trim();
