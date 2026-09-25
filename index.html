@@ -271,7 +271,24 @@
   .err-item .err-wrong{margin:0 0 6px; font-size:1.05rem; font-weight:700;}
   .err-grammar .err-wrong{color:var(--red);}
   .err-vocab .err-wrong{color:var(--green);}
-  .err-item .note{margin:0 0 8px; font-size:.86rem; color:var(--ink-soft);}
+  /* Thay thế CSS cũ của note để thêm white-space: pre-wrap (giúp giữ nguyên dấu xuống dòng) */
+  .err-item .note { margin:0 0 8px; font-size:.86rem; color:var(--ink-soft); white-space: pre-wrap; line-height: 1.6;}
+  .upgrade-item p.note { margin:5px 0 0; font-size:.86rem; color:var(--ink-soft); white-space: pre-wrap; line-height: 1.6;}
+
+  /* THÊM MỚI: Style cho ô search trong bảng sửa bài */
+  .edit-search-box {
+    margin: 20px 0 10px 0;
+    padding: 12px;
+    background: #f0f7f4;
+    border: 1px dashed var(--green);
+    border-radius: var(--radius);
+  }
+  .edit-search-box label {
+    display: block; font-size: .85rem; color: var(--green); margin-bottom: 6px; font-weight: 600;
+  }
+  .edit-search-box input {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); font-family: inherit; font-size: .92rem;
+  }
   .err-item .fix{
     margin:0;
     font-size:.94rem;
@@ -661,7 +678,15 @@
       <label for="editAnswer">Bài làm của tôi</label>
       <textarea id="editAnswer" class="zh" rows="4"></textarea>
     </div>
-
+    
+<div class="edit-search-box">
+      <label for="editSearchInput">🔍 Tìm kiếm nhanh lỗi cần sửa (Lọc danh sách bên dưới):</label>
+      <input type="text" id="editSearchInput" placeholder="Nhập từ khóa tiếng Việt hoặc chữ Hán để tìm nhanh...">
+    </div>
+    
+    <div class="edit-search-box">
+      <label for="editSearchInput">🔍 Tìm kiếm nhanh lỗi cần sửa (Lọc danh sách bên dưới):</label>
+      <input type="text" id="editSearchInput" placeholder="Nhập từ khóa tiếng Việt hoặc chữ Hán để tìm nhanh...">
     <div class="edit-section">
       <h3>Sai ngữ pháp</h3>
       <div id="editGrammarList"></div>
@@ -1214,10 +1239,12 @@ function buildAnswerHtml(p){
 function errItemHtml(item, id){
   return '<div class="err-item" id="' + id + '">' +
     '<p class="zh err-wrong">' + escapeHtml(item.wrong) + '</p>' +
-    (item.note ? '<p class="note">' + escapeHtml(item.note) + '</p>' : '') +
+    // Thêm applyBoldAndHighlight vào item.note
+    (item.note ? '<p class="note">' + applyBoldAndHighlight(escapeHtml(item.note)) + '</p>' : '') +
     (item.fix ? '<p class="fix"><span class="fix-arrow">→</span> ' + highlightZh(escapeHtml(item.fix)) + '</p>' : '') +
     '</div>';
 }
+  
 // Hàm chuyển đổi các ký tự đặc biệt thành highlight
 function formatPromptText(text) {
   if (!text) return "";
@@ -1299,7 +1326,7 @@ function renderMain() {
           ${p.upgrades.map((u,i) => `
             <div class="upgrade-item" id="upg-${i}">
               <span class="zh from">${escapeHtml(u.from)}</span><span class="arrow">→</span><span class="zh to">${escapeHtml(u.to)}</span>
-              ${u.note ? '<p class="note">'+escapeHtml(u.note)+'</p>' : ''}
+              ${u.note ? '<p class="note">'+applyBoldAndHighlight(escapeHtml(u.note))+'</p>' : ''}
             </div>
           `).join("")}
         </section>` : ""}
@@ -1379,6 +1406,9 @@ function openEditPanel(){
   const p = cat.parts[currentPartIndex];
   if(!p) return;
 
+  // ==== THÊM DÒNG NÀY ====
+  document.getElementById("editSearchInput").value = "";
+  
   // Clear overwrite message & input
   const overMsg = document.getElementById("overwriteMsg");
   if (overMsg) overMsg.hidden = true;
@@ -1527,6 +1557,27 @@ document.getElementById("content").addEventListener("click", (e)=>{
   if(e.target.closest("#btnEditPart")) openEditPanel();
 });
 
+  /* ============ Tính năng Tìm kiếm trong bảng Sửa bài ============ */
+document.getElementById("editSearchInput").addEventListener("input", function(e) {
+  const searchTerm = e.target.value.toLowerCase();
+  // Lấy tất cả các dòng lỗi từ tất cả các danh sách (ngữ pháp, từ vựng, nâng cấp)
+  const allRows = document.querySelectorAll("#editGrammarList .edit-row, #editVocabList .edit-row, #editUpgradeList .edit-row, #editSampleList .edit-row");
+  
+  allRows.forEach(row => {
+    // Thu thập toàn bộ nội dung của các ô input, textarea trong dòng đó
+    const inputs = row.querySelectorAll("input, textarea");
+    let textContent = "";
+    inputs.forEach(input => textContent += input.value.toLowerCase() + " ");
+    
+    // Nếu nội dung chứa từ khóa tìm kiếm thì hiện, không thì ẩn
+    if (textContent.includes(searchTerm)) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
+  
 /* ============ Import panel wiring ============ */
 const overlay = document.getElementById("overlay");
 const importArea = document.getElementById("importArea");
