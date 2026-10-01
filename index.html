@@ -575,6 +575,41 @@
     *{transition:none !important;}
   
   }
+
+  /* ============ TOOLBAR FORMAT ============ */
+  .rich-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #f4f6f8;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px;
+    margin-bottom: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .rt-btn {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--ink);
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .rt-btn:hover { background: #e9ecef; border-color: #bbb; }
+  .rt-btn[data-action="bold"] { color: var(--red); font-weight: 700; }
+  .rt-btn[data-action="italic"] { font-style: italic; }
+  .rt-btn[data-action="underline"] { text-decoration: underline; }
+  .rt-btn[data-action="strike"] { text-decoration: line-through; }
+  .rt-btn[data-action="highlight"] { background: #FBF0D6; }
+  .rt-btn[data-action="color-green"] { color: var(--green); }
+  .rt-btn[data-action="color-blue"] { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -614,6 +649,19 @@
       <button id="btnClosePanel" aria-label="Đóng">✕</button>
     </div>
     <p class="panel-hint">
+      <!-- THANH CÔNG CỤ FORMAT (Nằm ngay trên ô chủ đề) -->
+    <div class="rich-toolbar" id="formatToolbar">
+      <button type="button" class="rt-btn" data-action="bold" title="In đậm (Đỏ)">B</button>
+      <button type="button" class="rt-btn" data-action="italic" title="In nghiêng">I</button>
+      <button type="button" class="rt-btn" data-action="underline" title="Gạch chân">U</button>
+      <button type="button" class="rt-btn" data-action="strike" title="Gạch ngang">S</button>
+      <span style="color:#ccc">|</span>
+      <button type="button" class="rt-btn" data-action="highlight" title="Bôi nền vàng">HL</button>
+      <button type="button" class="rt-btn" data-action="color-green" title="Chữ Xanh Lá">Xanh Lá</button>
+      <button type="button" class="rt-btn" data-action="color-blue" title="Chữ Xanh Dương">Xanh Dương</button>
+      <span style="color:#ccc">|</span>
+      <button type="button" class="rt-btn" data-action="bullet" title="Gạch đầu dòng">• List</button>
+    </div>
       Dán nội dung bài luyện dịch theo đúng cấu trúc gốc — mỗi bài bắt đầu bằng dòng
       "BÀI n", có "1. Đề bài", "2. Phần trả lời của tôi", "3. Phần feedback". Dữ liệu được lưu trực tiếp vào bộ nhớ trình duyệt, chỉ trên máy này.
     </p>
@@ -1246,21 +1294,29 @@ function errItemHtml(item, id){
 // Hàm chuyển đổi các ký tự đặc biệt thành highlight
 function formatPromptText(text) {
   if (!text) return "";
-  // Bước 1: Vẫn phải escapeHtml để chống lỗi code
   let safeText = escapeHtml(text);
-  // Bước 2: Đổi cú pháp **chữ** thành đổi màu đỏ
-  safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<span class="hl-custom-text">$1</span>');
-  // Bước 3: Đổi cú pháp ==chữ== thành bôi nền vàng
-  safeText = safeText.replace(/==(.*?)==/g, '<span class="hl-custom-bg">$1</span>');
-  
-  return safeText;
+  return parseRichText(safeText);
 }
-  
-  function applyBoldAndHighlight(escapedStr) {
+
+function applyBoldAndHighlight(escapedStr) {
   if (!escapedStr) return "";
-  let s = escapedStr;
+  return parseRichText(escapedStr);
+}
+
+// Hàm dùng chung để dịch các cú pháp định dạng sang HTML
+function parseRichText(s) {
+  // Bold (Màu đỏ theo thiết kế cũ của bạn) -> **chữ**
   s = s.replace(/\*\*(.*?)\*\*/g, '<span class="hl-custom-text">$1</span>');
+  // Highlight nền vàng -> ==chữ==
   s = s.replace(/==(.*?)==/g, '<span class="hl-custom-bg">$1</span>');
+  // Italic (In nghiêng) -> *chữ*
+  s = s.replace(/\*(.*?)\*/g, '<i>$1</i>');
+  // Underline (Gạch chân) -> __chữ__
+  s = s.replace(/__(.*?)__/g, '<u>$1</u>');
+  // Strikethrough (Gạch ngang) -> ~~chữ~~
+  s = s.replace(/~~(.*?)~~/g, '<s>$1</s>');
+  // Chữ màu sắc -> [color=red]chữ[/color]
+  s = s.replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color:$1; font-weight:600;">$2</span>');
   return s;
 }
   
@@ -1801,6 +1857,72 @@ document.getElementById("content").addEventListener("click", (e)=>{
   if(!hl) return;
   window.jumpToTarget(hl.getAttribute("data-target"));
 });
+  /* ============ TÍNH NĂNG FORMAT TOOLBAR ============ */
+let lastFocusedInput = null;
+
+// Lắng nghe xem người dùng đang nhấp nháy chuột ở ô nhập liệu (textarea/input) nào
+document.addEventListener('focusin', function(e) {
+  if (e.target.tagName === 'TEXTAREA' || e.target.type === 'text') {
+    lastFocusedInput = e.target;
+  }
+});
+
+const formatToolbar = document.getElementById("formatToolbar");
+if (formatToolbar) {
+  // Dùng 'mousedown' thay vì 'click' và preventDefault để khi bấm nút trên toolbar, 
+  // con trỏ chuột không bị văng ra khỏi ô textarea đang gõ.
+  formatToolbar.addEventListener('mousedown', function(e) {
+    e.preventDefault(); 
+    if (!lastFocusedInput || e.target.tagName !== 'BUTTON') return;
+
+    const action = e.target.getAttribute('data-action');
+    let startTag = "", endTag = "";
+
+    switch(action) {
+      case "bold": startTag = "**"; endTag = "**"; break;
+      case "italic": startTag = "*"; endTag = "*"; break;
+      case "underline": startTag = "__"; endTag = "__"; break;
+      case "strike": startTag = "~~"; endTag = "~~"; break;
+      case "highlight": startTag = "=="; endTag = "=="; break;
+      case "color-green": startTag = "[color=#1D6B49]"; endTag = "[/color]"; break;
+      case "color-blue": startTag = "[color=#28527A]"; endTag = "[/color]"; break;
+      case "bullet": startTag = "\n• "; endTag = ""; break;
+    }
+
+    insertTextAtCursor(lastFocusedInput, startTag, endTag);
+  });
+}
+
+function insertTextAtCursor(inputEl, openTag, closeTag) {
+  const startPos = inputEl.selectionStart;
+  const endPos = inputEl.selectionEnd;
+  const text = inputEl.value;
+  const selectedText = text.substring(startPos, endPos);
+
+  // Nếu là Bullet point (gạch đầu dòng) và không bôi đen chữ, chỉ chèn dấu chấm
+  if (openTag === "\n• " && selectedText === "") {
+    const newText = text.substring(0, startPos) + openTag + text.substring(endPos);
+    inputEl.value = newText;
+    inputEl.focus();
+    inputEl.setSelectionRange(startPos + openTag.length, startPos + openTag.length);
+    return;
+  }
+
+  // Chèn tag bao quanh chữ bôi đen
+  const newText = text.substring(0, startPos) + openTag + selectedText + closeTag + text.substring(endPos);
+  inputEl.value = newText;
+
+  // Đặt lại con trỏ chuột vào đúng vị trí sau khi chèn
+  inputEl.focus();
+  if (selectedText.length > 0) {
+    inputEl.setSelectionRange(startPos, startPos + openTag.length + selectedText.length + closeTag.length);
+  } else {
+    inputEl.setSelectionRange(startPos + openTag.length, startPos + openTag.length);
+  }
+  
+  // Kích hoạt event input để các chức năng khác (nếu có) nhận diện nội dung vừa thay đổi
+  inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+}
 </script>
 </body>
 </html>
