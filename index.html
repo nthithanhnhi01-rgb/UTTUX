@@ -611,6 +611,22 @@
   .rt-btn[data-action="color-red"] { color: var(--red); }
   .rt-btn[data-action="color-green"] { color: var(--green); }
   .rt-btn[data-action="color-blue"] { color: var(--accent); }
+
+  /* ============ BULLET FORMAT ============ */
+  .bullet-line {
+    display: inline-flex;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .b-dot {
+    flex: none;
+    width: 18px; /* Độ rộng của lề thụt vào */
+    font-weight: 800;
+  }
+  .b-text {
+    flex: 1;
+  }
+  
 </style>
 </head>
 <body>
@@ -1335,6 +1351,8 @@ function parseRichText(s) {
   s = s.replace(/~~(.*?)~~/g, '<s>$1</s>');
   // Chữ màu sắc -> [color=red]chữ[/color]
   s = s.replace(/\[color=(.*?)\](.*?)\[\/color\]/g, '<span style="color:$1; font-weight:600;">$2</span>');
+  // DÒNG MỚI THÊM: Xử lý gạch đầu dòng (thụt lề treo)
+  s = s.replace(/^•\s+(.*)$/gm, '<span class="bullet-line"><span class="b-dot">•</span><span class="b-text">$1</span></span>');
   return s;
 }
   
@@ -1891,8 +1909,14 @@ document.querySelectorAll(".rich-toolbar").forEach(toolbar => {
     e.preventDefault(); 
     if (!lastFocusedInput || e.target.tagName !== 'BUTTON') return;
 
+    // (Tìm đoạn này trong script Toolbar và thay thế)
     const action = e.target.getAttribute('data-action');
     let startTag = "", endTag = "";
+    const text = lastFocusedInput.value;
+    const startPos = lastFocusedInput.selectionStart;
+
+    // Kiểm tra xem con trỏ chuột có đang ở đầu dòng không
+    const isStartOfLine = startPos === 0 || text.charAt(startPos - 1) === '\n';
 
     switch(action) {
       case "bold": startTag = "**"; endTag = "**"; break;
@@ -1903,7 +1927,9 @@ document.querySelectorAll(".rich-toolbar").forEach(toolbar => {
       case "color-red": startTag = "[color=#C1432E]"; endTag = "[/color]"; break;
       case "color-green": startTag = "[color=#1D6B49]"; endTag = "[/color]"; break;
       case "color-blue": startTag = "[color=#28527A]"; endTag = "[/color]"; break;
-      case "bullet": startTag = "\n• "; endTag = ""; break;
+      
+      // Nếu đang ở đầu dòng thì KHÔNG chèn \n nữa
+      case "bullet": startTag = isStartOfLine ? "• " : "\n• "; endTag = ""; break;
     }
 
     insertTextAtCursor(lastFocusedInput, startTag, endTag);
