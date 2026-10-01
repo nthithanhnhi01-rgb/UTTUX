@@ -603,7 +603,7 @@
     transition: all 0.2s;
   }
   .rt-btn:hover { background: #e9ecef; border-color: #bbb; }
-  .rt-btn[data-action="bold"] { color: var(--red); font-weight: 700; }
+  .rt-btn[data-action="bold"] { font-weight: 800; }
   .rt-btn[data-action="italic"] { font-style: italic; }
   .rt-btn[data-action="underline"] { text-decoration: underline; }
   .rt-btn[data-action="strike"] { text-decoration: line-through; }
@@ -1323,8 +1323,8 @@ function applyBoldAndHighlight(escapedStr) {
 
 // Hàm dùng chung để dịch các cú pháp định dạng sang HTML
 function parseRichText(s) {
-  // Bold (Màu đỏ theo thiết kế cũ của bạn) -> **chữ**
-  s = s.replace(/\*\*(.*?)\*\*/g, '<span class="hl-custom-text">$1</span>');
+  // Bold -> **chữ**
+  s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   // Highlight nền vàng -> ==chữ==
   s = s.replace(/==(.*?)==/g, '<span class="hl-custom-bg">$1</span>');
   // Italic (In nghiêng) -> *chữ*
