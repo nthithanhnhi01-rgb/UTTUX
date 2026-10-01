@@ -608,6 +608,7 @@
   .rt-btn[data-action="underline"] { text-decoration: underline; }
   .rt-btn[data-action="strike"] { text-decoration: line-through; }
   .rt-btn[data-action="highlight"] { background: #FBF0D6; }
+  .rt-btn[data-action="color-red"] { color: var(--red); }
   .rt-btn[data-action="color-green"] { color: var(--green); }
   .rt-btn[data-action="color-blue"] { color: var(--accent); }
 </style>
@@ -649,14 +650,16 @@
       <button id="btnClosePanel" aria-label="Đóng">✕</button>
     </div>
     <p class="panel-hint">
-      <!-- THANH CÔNG CỤ FORMAT (Nằm ngay trên ô chủ đề) -->
-    <div class="rich-toolbar" id="formatToolbar">
-      <button type="button" class="rt-btn" data-action="bold" title="In đậm (Đỏ)">B</button>
+
+    <!-- THANH CÔNG CỤ FORMAT (Dành cho Sửa bài) -->
+    <div class="rich-toolbar">
+      <button type="button" class="rt-btn" data-action="bold" title="In đậm">B</button>
       <button type="button" class="rt-btn" data-action="italic" title="In nghiêng">I</button>
       <button type="button" class="rt-btn" data-action="underline" title="Gạch chân">U</button>
       <button type="button" class="rt-btn" data-action="strike" title="Gạch ngang">S</button>
       <span style="color:#ccc">|</span>
       <button type="button" class="rt-btn" data-action="highlight" title="Bôi nền vàng">HL</button>
+      <button type="button" class="rt-btn" data-action="color-red" title="Chữ Đỏ">Đỏ</button>
       <button type="button" class="rt-btn" data-action="color-green" title="Chữ Xanh Lá">Xanh Lá</button>
       <button type="button" class="rt-btn" data-action="color-blue" title="Chữ Xanh Dương">Xanh Dương</button>
       <span style="color:#ccc">|</span>
@@ -699,6 +702,21 @@
     </div>
     <p class="panel-hint">Sửa trực tiếp nội dung bài, danh sách lỗi, nâng cấp từ vựng và bản dịch mẫu. Bấm "Lưu thay đổi" để ghi lại.</p>
 
+    <!-- THANH CÔNG CỤ FORMAT (Dành cho Sửa bài) -->
+    <div class="rich-toolbar">
+      <button type="button" class="rt-btn" data-action="bold" title="In đậm">B</button>
+      <button type="button" class="rt-btn" data-action="italic" title="In nghiêng">I</button>
+      <button type="button" class="rt-btn" data-action="underline" title="Gạch chân">U</button>
+      <button type="button" class="rt-btn" data-action="strike" title="Gạch ngang">S</button>
+      <span style="color:#ccc">|</span>
+      <button type="button" class="rt-btn" data-action="highlight" title="Bôi nền vàng">HL</button>
+      <button type="button" class="rt-btn" data-action="color-red" title="Chữ Đỏ">Đỏ</button>
+      <button type="button" class="rt-btn" data-action="color-green" title="Chữ Xanh Lá">Xanh Lá</button>
+      <button type="button" class="rt-btn" data-action="color-blue" title="Chữ Xanh Dương">Xanh Dương</button>
+      <span style="color:#ccc">|</span>
+      <button type="button" class="rt-btn" data-action="bullet" title="Gạch đầu dòng">• List</button>
+    </div>
+    
     <!-- TÍNH NĂNG MỚI: GHI ĐÈ DỮ LIỆU -->
     <div class="edit-section" style="margin-top: 0; padding-top: 0; border-top: none; background: #eef7f2; padding: 14px; border-radius: var(--radius); border: 1px dashed var(--green);">
       <h3 style="color: var(--green); margin-bottom: 8px;">🔄 Cập nhật/Ghi đè bằng data mới (Giữ nguyên Đề bài & Dịch mẫu)</h3>
@@ -1860,18 +1878,16 @@ document.getElementById("content").addEventListener("click", (e)=>{
   /* ============ TÍNH NĂNG FORMAT TOOLBAR ============ */
 let lastFocusedInput = null;
 
-// Lắng nghe xem người dùng đang nhấp nháy chuột ở ô nhập liệu (textarea/input) nào
+// Lắng nghe ô nhập liệu đang được trỏ chuột
 document.addEventListener('focusin', function(e) {
   if (e.target.tagName === 'TEXTAREA' || e.target.type === 'text') {
     lastFocusedInput = e.target;
   }
 });
 
-const formatToolbar = document.getElementById("formatToolbar");
-if (formatToolbar) {
-  // Dùng 'mousedown' thay vì 'click' và preventDefault để khi bấm nút trên toolbar, 
-  // con trỏ chuột không bị văng ra khỏi ô textarea đang gõ.
-  formatToolbar.addEventListener('mousedown', function(e) {
+// Hỗ trợ nhiều toolbar cùng lúc (nếu bạn dán cả ở bảng Nhập bài và Sửa bài)
+document.querySelectorAll(".rich-toolbar").forEach(toolbar => {
+  toolbar.addEventListener('mousedown', function(e) {
     e.preventDefault(); 
     if (!lastFocusedInput || e.target.tagName !== 'BUTTON') return;
 
@@ -1884,6 +1900,7 @@ if (formatToolbar) {
       case "underline": startTag = "__"; endTag = "__"; break;
       case "strike": startTag = "~~"; endTag = "~~"; break;
       case "highlight": startTag = "=="; endTag = "=="; break;
+      case "color-red": startTag = "[color=#C1432E]"; endTag = "[/color]"; break;
       case "color-green": startTag = "[color=#1D6B49]"; endTag = "[/color]"; break;
       case "color-blue": startTag = "[color=#28527A]"; endTag = "[/color]"; break;
       case "bullet": startTag = "\n• "; endTag = ""; break;
@@ -1891,7 +1908,7 @@ if (formatToolbar) {
 
     insertTextAtCursor(lastFocusedInput, startTag, endTag);
   });
-}
+});
 
 function insertTextAtCursor(inputEl, openTag, closeTag) {
   const startPos = inputEl.selectionStart;
@@ -1899,7 +1916,6 @@ function insertTextAtCursor(inputEl, openTag, closeTag) {
   const text = inputEl.value;
   const selectedText = text.substring(startPos, endPos);
 
-  // Nếu là Bullet point (gạch đầu dòng) và không bôi đen chữ, chỉ chèn dấu chấm
   if (openTag === "\n• " && selectedText === "") {
     const newText = text.substring(0, startPos) + openTag + text.substring(endPos);
     inputEl.value = newText;
@@ -1908,11 +1924,9 @@ function insertTextAtCursor(inputEl, openTag, closeTag) {
     return;
   }
 
-  // Chèn tag bao quanh chữ bôi đen
   const newText = text.substring(0, startPos) + openTag + selectedText + closeTag + text.substring(endPos);
   inputEl.value = newText;
 
-  // Đặt lại con trỏ chuột vào đúng vị trí sau khi chèn
   inputEl.focus();
   if (selectedText.length > 0) {
     inputEl.setSelectionRange(startPos, startPos + openTag.length + selectedText.length + closeTag.length);
@@ -1920,7 +1934,6 @@ function insertTextAtCursor(inputEl, openTag, closeTag) {
     inputEl.setSelectionRange(startPos + openTag.length, startPos + openTag.length);
   }
   
-  // Kích hoạt event input để các chức năng khác (nếu có) nhận diện nội dung vừa thay đổi
   inputEl.dispatchEvent(new Event('input', { bubbles: true }));
 }
 </script>
