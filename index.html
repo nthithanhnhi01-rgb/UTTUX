@@ -768,16 +768,18 @@
     
 
     <div class="edit-section">
-      <h3>Sai ngữ pháp</h3>
-      <div id="editGrammarList"></div>
-      <button type="button" class="btn-add-row" id="btnAddGrammar">＋ Thêm lỗi ngữ pháp</button>
-    </div>
+  <h3>Sai ngữ pháp</h3>
+  <p class="edit-empty-hint">Mẹo: Nếu từ sai lặp lại nhiều lần trong bài, hãy kẹp nó trong ngoặc vuông kèm ngữ cảnh. VD: <code>推企业[到]破产</code></p>
+  <div id="editGrammarList"></div>
+  <button type="button" class="btn-add-row" id="btnAddGrammar">＋ Thêm lỗi ngữ pháp</button>
+</div>
 
-    <div class="edit-section">
-      <h3>Sai từ vựng / dùng từ</h3>
-      <div id="editVocabList"></div>
-      <button type="button" class="btn-add-row" id="btnAddVocab">＋ Thêm lỗi từ vựng</button>
-    </div>
+<div class="edit-section">
+  <h3>Sai từ vựng / dùng từ</h3>
+  <p class="edit-empty-hint">Mẹo: Dùng ngoặc vuông <code>[từ sai]</code> kèm ngữ cảnh để highlight chính xác nếu từ đó bị trùng.</p>
+  <div id="editVocabList"></div>
+  <button type="button" class="btn-add-row" id="btnAddVocab">＋ Thêm lỗi từ vựng</button>
+</div>
 
     <div class="edit-section">
       <h3>Nâng cấp từ vựng HSK 6 &amp; thành ngữ</h3>
@@ -1278,33 +1280,71 @@ function extractZhFragments(s){
   return m || [];
 }
 
+// 1. Thêm hàm mới: Thuật toán tìm kiếm thông minh có ngữ cảnh
+function findExactHighlight(text, searchStr) {
+  if (!searchStr || !text) return [];
+
+  // Trường hợp 1: Có dùng ngoặc vuông xác định ngữ cảnh VD: "推企业[到]破产"
+  let contextMatch = /\[(.*?)\]/.exec(searchStr);
+  if (contextMatch) {
+    let fullSearchStr = searchStr.replace(/\[|\]/g, ""); // Bỏ ngoặc vuông: "推企业到破产"
+    let prefixStr = searchStr.substring(0, searchStr.indexOf('[')); // Phần trước ngoặc: "推企业"
+    let targetStr = contextMatch[1]; // Chữ cần highlight: "到"
+
+    let idx = text.indexOf(fullSearchStr);
+    if (idx !== -1) {
+      let start = idx + prefixStr.length;
+      return [{ start: start, end: start + targetStr.length }];
+    }
+  }
+
+  // Trường hợp 2: Tìm nguyên cụm từ (Tốt hơn cách cũ là tách nát ra)
+  let cleanStr = searchStr.replace(/^[“"]|[”"]$/g, '');
+  let idx = text.indexOf(cleanStr);
+  if (idx !== -1) {
+    return [{ start: idx, end: idx + cleanStr.length }];
+  }
+
+  // Trường hợp 3: Fallback (Cách cũ) tách từng chữ Hán ra tìm nếu cụm dài dính dấu câu
+  let results = [];
+  extractZhFragments(cleanStr).forEach(frag => {
+    let fIdx = text.indexOf(frag);
+    if (fIdx !== -1) results.push({ start: fIdx, end: fIdx + frag.length });
+  });
+  return results;
+}
+
+// 2. Viết lại hàm buildAnswerHtml để áp dụng thuật toán mới
 function buildAnswerHtml(p){
   const text = p.answer || "";
   const candidates = [];
+  
   (p.grammar||[]).forEach((item, i)=>{
-    extractZhFragments(item.wrong).forEach(frag=>{
-      const idx = text.indexOf(frag);
-      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-red", target:"err-g-"+i});
+    findExactHighlight(text, item.wrong).forEach(match => {
+      candidates.push({start: match.start, end: match.end, cls: "hl-red", target: "err-g-"+i});
     });
   });
+  
   (p.vocab||[]).forEach((item, i)=>{
-    extractZhFragments(item.wrong).forEach(frag=>{
-      const idx = text.indexOf(frag);
-      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-red", target:"err-v-"+i});
+    findExactHighlight(text, item.wrong).forEach(match => {
+      candidates.push({start: match.start, end: match.end, cls: "hl-red", target: "err-v-"+i});
     });
   });
+  
   (p.upgrades||[]).forEach((item, i)=>{
-    extractZhFragments(item.from).forEach(frag=>{
-      const idx = text.indexOf(frag);
-      if(idx !== -1) candidates.push({start:idx, end:idx+frag.length, cls:"hl-green", target:"upg-"+i});
+    findExactHighlight(text, item.from).forEach(match => {
+      candidates.push({start: match.start, end: match.end, cls: "hl-green", target: "upg-"+i});
     });
   });
+  
+  // Sắp xếp và gộp highlight (giữ nguyên logic cũ của bạn)
   candidates.sort((a,b)=> a.start - b.start || (b.end-b.start) - (a.end-a.start));
   const accepted = [];
   let lastEnd = -1;
   candidates.forEach(c=>{
     if(c.start >= lastEnd){ accepted.push(c); lastEnd = c.end; }
   });
+  
   let html = "", pos = 0;
   accepted.forEach(c=>{
     html += escapeHtml(text.slice(pos, c.start));
@@ -1748,6 +1788,10 @@ const IMPORT_FORMAT_GUIDE = [
 "   cứ thêm khối tương ứng, cách nhau 1 dòng trống theo đúng quy tắc (2).",
 "6) Không thêm chữ hay ký hiệu nào khác ngoài cấu trúc trên (không thêm gạch",
 "   đầu dòng, không đánh số phụ, không thêm ghi chú ngoài lề)."
+  "7) GIẢI QUYẾT TỪ TRÙNG LẶP (RẤT QUAN TRỌNG): Nếu từ/cụm từ bị sai quá ngắn",
+"   hoặc xuất hiện nhiều lần trong câu (vd: chữ 的, 在, 是...), hãy thêm 1-2 từ",
+"   phía trước hoặc phía sau làm ngữ cảnh và BỌC TỪ SAI TRONG NGOẶC VUÔNG [...].",
+"   Ví dụ: Thay vì ghi là \"在\", hãy ghi là \"残酷的[在]商场\".",
 ].join("\n");
 document.getElementById("guideText").value = IMPORT_FORMAT_GUIDE;
 
